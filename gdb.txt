@@ -1,0 +1,43 @@
+Vim:显示行号:
+	:set number
+gdb调试：
+		1：在文件夹中ls查看需要编译的源文件，例如main.c
+		2：编译源文件#gcc  -g main.c -0 main_g
+		3：进入gdb调试 #gdb main_g
+		4:		设置断点（gdb)break main 在main函数处设置断点，也可以在固定行数设置断点 (gdb)break 14 在第14行设置断点
+		5:		list						查看源程序
+				info break		查看断点信息列表
+				delete 行号		删除断点
+				run						运行程序
+				next					执行下一句
+				print	变量名	打印当前变量的值
+				step					下一步进入子函数
+
+				set args "param1" "param2"
+
+3:ffmpeg/doc/example/avio_dir_cmd.c分析
+	avpriv_io_move(src, dst)  // 移动文件
+	avpriv_io_delete(url)
+	av_err2str(ret)	//返回错误信息
+	//枚举文件夹下的所有内容
+	AVIODirEntry	*entey = NULL;
+	AVIODirContext *ctx = NULL;
+	if(avio_open_dir(&ctx,input_str,NULL) < 0)
+	{
+		//error
+	}
+	for(;;)
+	{
+		if(avio_read_dir(ctx,&entey) < 0)
+		{
+			//error
+		}
+		if(!entry)
+			break;
+		if(entry->filemode == -1)
+		{
+		}
+		else
+		{
+		}
+	}

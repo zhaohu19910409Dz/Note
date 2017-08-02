@@ -1,0 +1,86 @@
+NVIDIA 视屏编码AIP的目的是，接受原始视屏数据（ＹＵＶ或者ＲＧＢ格式）并且输出Ｈ２６４或者ＨＥＶＣ流，下面是编码流程
+１：初始化编码器
+２：设置所需要的参数
+３：分配输入输出缓存
+４：拷贝帧数据到输入缓存并且从输出缓存读取输出流，这个可以再Windows&Linux上同步完成，也可以异步完成（仅仅在Windows7以上）
+5：关闭编码会话
+6：清理；释放所有分配的输入输出缓存
+
+Chapter_3.1:打开一个编码会话
+ 当加载动态库或者共享链接库后，客户端和API的第一个交互式调用NvEncodeAPICreateInstance，这个的输出是一个提供的功能接口函数列表指针
+
+	NVENCSTATUS nvStatus = NV_ENC_SUCCESS;
+    MYPROC nvEncodeAPICreateInstance; // function pointer to create instance in nvEncodeAPI
+
+    m_hinstLib = LoadLibrary(TEXT("nvEncodeAPI64.dll")); 
+	//m_hinstLib = LoadLibrary(TEXT("nvEncodeAPI.dll"));
+    if (m_hinstLib == NULL)
+        return NV_ENC_ERR_OUT_OF_MEMORY;
+	
+    nvEncodeAPICreateInstance = (MYPROC)GetProcAddress(m_hinstLib, "NvEncodeAPICreateInstance");
+
+    if (nvEncodeAPICreateInstance == NULL)
+        return NV_ENC_ERR_OUT_OF_MEMORY;
+
+    m_pEncodeAPI = new NV_ENCODE_API_FUNCTION_LIST;
+    if (m_pEncodeAPI == NULL)
+        return NV_ENC_ERR_OUT_OF_MEMORY;
+
+    memset(m_pEncodeAPI, 0, sizeof(NV_ENCODE_API_FUNCTION_LIST));
+    m_pEncodeAPI->version = NV_ENCODE_API_FUNCTION_LIST_VER;
+    nvStatus = nvEncodeAPICreateInstance(m_pEncodeAPI);
+    if (nvStatus != NV_ENC_SUCCESS)
+        return nvStatus;
+ 当加载了NVENC接口函数后，客户端首先应该调用NVENCOpenEncodeSessionEx函数来打开一个编码会话，这个函数返回一个编码会话句柄，这个句柄必须用于当前会话的所有API函数中
+
+	NVENCSTATUS nvStatus = NV_ENC_SUCCESS;
+    NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS openSessionExParams;
+
+    memset(&openSessionExParams, 0, sizeof(openSessionExParams));
+    SET_VER(openSessionExParams, NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS);
+
+    openSessionExParams.device = device;
+    openSessionExParams.deviceType = deviceType;
+    openSessionExParams.apiVersion = NVENCAPI_VERSION;
+
+    nvStatus = m_pEncodeAPI->nvEncOpenEncodeSessionEx(&openSessionExParams, &m_hEncoder);
+    if (nvStatus != NV_ENC_SUCCESS)
+    {
+        assert(0);
+    }
+
+    return nvStatus;
+
+	3.1.1 初始化编码设备
+	NVIDIA编码器支持使用一下类型的设备
+	3.1.1.1 DirectX 9：
+
+	3.1.1.1 DirectX 10：
+
+	3.1.1.1 DirectX 11：
+		客户端需要传递一个指向IUnknown的接口来创建设备转化为NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS::device，并且设置NV_ENC_OPEN_ENCODE_SESSION_EX_PARAMS::deviceType为
+		NV_ENC_DEVICE_DIRECTX。DirectX设备仅仅支持Windows7及其以后的Windows操作系统
+
+	3.1.1.4 CUDA：
+		
+3.2 选择编码器GUID
+	客户端需要选择一个代表所需要的编码器的GUID来以下列方式编码视屏序列：
+	1：客户端应该调用NvEncGetEncodeGUIDCount来从NVIDIA视屏编码接口中获取支持的编码GUID值的数目
+	2：客户端应该使用这个数目来分配足够大的缓冲区来存放这些支持的编码器GUIDS
+	3：然后调用NVENCGetEncodeGUIDs来将这些GUDIS存在在列表中
+	应用程序应该从这个列表中选择一个符合要求的GUID并且用它作为剩下的编码会话的encodeGUID；、
+
+3.3 编码器预设置
+	NVIDIA编码器接口提供了各种预设置来适应不懂得视屏编码条件，使用预设置可以自动的设置所有相关的编码参数。这个是提供的API的简单级别的控制，特殊的属性和参数在预设置后是可以改变的，这个将在下面两个段落中解释：
+
+	3.3.1 枚举设置的GUID
+		我们可以通过枚举预设置的GUIDs老选择encodeGUID：
+		1：调用NvEncGetEncodePresetCount来获取提供的编码器GUIDs
+		2：客户端应该使用这个数目来分配足够大的缓冲区来存放这些支持的编码器GUIDS
+		3:调用NvEncGetEncodePresetGUIDs来将这些GUDIS存在在列表中
+
+	3.3.2 选择编码器的预设置配置
+		从上文中可知，客户端通过使用presetGUID来直接配置编码会话。这个将会为硬件编码器设置合适的参数
+
+3.4 选择一个编码器描述
+	

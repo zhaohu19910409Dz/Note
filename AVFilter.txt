@@ -1,0 +1,28 @@
+AVFilter的功能可以处理图像的色调，模糊，水平翻转，裁剪，加方框，叠加文字等功能。
+AVFilter的初始化比较复杂，用起来比较简单。初始化的时候需要调用avfilter_register_all()到avfilter_graph_config()一系列函数。
+而在使用的时候只用两个函数:av_buffersrc_add_frame()用于向FilterGraph中加入一个Frame，而av_buffersink_get_frame()用于从FilterGraph中取出一个Frame。
+
+流程中的关键函数如下所示：
+
+    avfilter_register_all()						注册所有AVFilter
+    avfilter_graph_alloc()					为FilterGraph分配内存
+    avfilter_graph_create_filter()		创建并向FilterGraph中添加一个Filter
+    avfilter_graph_parse_ptr()			将一串通过字符串描述的Graph添加到FilterGraph中
+    avfilter_graph_config()					检查FilterGraph的配置
+    av_buffersrc_add_frame()			向FilterGraph中加入一个AVFrame
+    av_buffersink_get_frame()			从FilterGraph中取出一个AVFrame
+
+	int totalNum = 0;
+	int nStart = 1,nEnd = 100;
+	int nTimes = nEnd - nStart + 1 ;
+	
+	//toltalNum = (nEnd + nStart) * (nTimes / 2) + (nTimes % 2)*（nEnd + nStart） / 2;
+
+	if(nTimes%2 == 0)
+	{
+		toltalNum = (nEnd + nStart) * (nTimes / 2);
+	}
+	else
+	{
+		toltalNum = (nEnd + nStart) * (nTimes / 2) + （nEnd + nStart） / 2;
+	}

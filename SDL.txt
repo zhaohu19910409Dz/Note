@@ -1,0 +1,3 @@
+1：在使用SDL播放音频的时候发现SDL_OpenAudioDevice打开一直失败，导致SDL不能进入回调函数。
+	使用SDL_GetError()打印错误提示XAudio2: XAudio2Create() failed at open.
+	解决办法：因为SDL_Init（）是在主线程中初始化的，则在打开的线程中加入CoInitialize(NULL);

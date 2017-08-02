@@ -1,0 +1,17 @@
+1:需求是解码视频后，使用DirectX纹理来叠加多个特效，最后回去叠加后特效的纹理数据；
+	如果需要取出创建的纹理数据，则需要设置Usage，CPUAccessFlags和MiscFlags的参数如下：
+		D3D11_TEXTURE2D_DESC desc={ 0 };
+		memset(&desc,0,sizeof(desc));
+		desc.Usage = D3D11_USAGE_STAGING;
+		desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+		desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
+
+然后将纹理数据更新到该纹理上:
+	mContext->UpdateSubresource(dstTex,0,NULL,srcTex,srcTex->GetWidth()*4,0);
+最后取出数据：
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	memset(&mappedResource,0,sizeof(D3D11_MAPPED_SUBRESOURCE));
+	mContext->Map(dstTex,0,D3D11_MAP_READ,0,&mappedResource);
+		pitch = mappedResource.RowPitch;
+		pData = mappedResource.pData;
+	mContext->Unmap(dstTex,0);

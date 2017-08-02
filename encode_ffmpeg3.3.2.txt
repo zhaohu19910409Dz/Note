@@ -1,0 +1,146 @@
+(一）分析ffmpeg3.3.2 example中的encode_video.c
+
+	 注意：编解码上下文的创建方式：
+		AVCodec	*codec = avcodec_find_encoder_by_name(codec_name);
+		AVCodecContext	*c = avcodec_alloc_context3(codec);
+		//set avcodeccontex params
+		c->bit_rate = 400000;
+		c->width = 352;
+		c->height = 288;
+		c->time_base = (AVRational){1,25};
+		c->framerate = (AVRational){25,1};
+		c->gop_size = 10;
+		c->max_b_frames = 1;
+		c->pix_fmt = AV_PIX_FMT_YUV420P;
+		if(codec->id == AV_CODEC_ID_H264)
+			av_opt_set(c->priv_data,"preset","slow",0);
+
+			………………
+			//申请一个缓存帧
+			AVFrame *frame = av_frame_alloc();
+			frame->format = c->pix_fmt;
+			frame->width = c->width;
+			frame->height = c->height;
+			av_frame_get_buffer(frame,32);
+
+			//encode 
+			for(i = 0; i< 25 ; i++)
+			{
+				av_init_packet(&pkt);
+				pkt.data = NULL;
+				pkt.size = 0;
+				//make sure frame data is writable
+				av_frame_make_writeable(frame);
+				
+				for (y = 0; y < c->height; y++)
+				 {
+					for (x = 0; x < c->width; x++) 
+					{
+							 frame->data[0][y * frame->linesize[0] + x] = x + y + i * 3;
+					 }
+					}
+
+				 /* Cb and Cr */
+				  for (y = 0; y < c->height/2; y++) 
+				  {
+						for (x = 0; x < c->width/2; x++)
+						 {
+								frame->data[1][y * frame->linesize[1] + x] = 128 + y + i * 2;
+								 frame->data[2][y * frame->linesize[2] + x] = 64 + x + i * 5;
+						 }
+					 }
+
+					frame->pts = i;
+					//编码
+					avcodec_encode_video2(c,&pkt,frame,&got_output);
+					if(got_output)
+					{
+						av_packet_unref(&pkt)l
+					}
+
+					//Get the delayed frames
+					for(got_output = 1;got_output;i++)
+					{
+						avcodec_encode_video2(c,&pkt,NULL,&got_output);
+						if(got_output)
+						{
+							av_packet_unref(&pkt);
+						}
+					}
+
+					avcodec_free_context(&c);
+					av_frame_free(&frame);
+（二）RGB与YUV444，YUV422，YUV420，YUV420P等等互转
+	注意:YU12和NV12的区别：（YV12的YUV分别是排列全部的YVU，NV12的的区别则是UV是交错的）
+	 由于H.264等压缩算法都是在YUV的颜色空间上进行的，所有在进行压缩前，首先要进行颜色空间的转换。如果摄像头采集的资源是RGB的，那么首先要转换成YUV，如果是YUV的，那么要根据压缩器具体支持的YUV格式做数据的重排。本文以RGB24àYUV420(YV12)为例，讲解颜色空间转换的原理。
+	数据表述方式
+
+	以320*240的一帧图像为例RGB24的排列方式如下图所示：
+	每个像素点有三个字节组成分别表示R,G,B分量上的颜色值。在数据中的表示方式为一个像素 一个像素表示。字节流可以表述如下：
+
+	BGRBGRBGRBGRBGR……
+	|---------------320*240*3-------|
+	每一个字母表示一个字节，也就是该颜色分量的数值，相邻的三个BGR字节表示一个像素点。在我们做计算时，通常一次取三个字节，也就是一个像素点。
+	相应的YV12的排列方式如下图所示：
+	每个像素点都有一个Y分量，每隔一列就有一个U或者V分量，U和V交替出现。YV12的字节流表示方式和RGB24有很大区别，YV12并不是按照像素依次排列的，而是先放置Y空间，然后放置整个V空间，最后放置U空间，那么字节流如下所示：
+	
+	YYYYYYY……VVVV……UUUU……
+	|-----320*240----|-320*240/4-|-320*240/4-|
+	在320*240个字节的Y后，紧跟着320*240/4个V和320*240/4个U。
+	YV12和RGB24同样都有320*240个像素点，但是在数据结构和字节流上有着很大区别。单纯从数据大小来看，RGB24的数据大小为320*240*3Bytes,而YV12为320*240*1.5Bytes，可见YV12的数据量为RGB24的一半。
+	转换公式
+
+	明白了数据表述方式之后，只要把对应像素点的RGB数值，分别计算成对应的YUV值，然后通过YUV的字节流样式把数据表述出来就可以了，这里，首先介绍一下RGB到YUV转换公式。
+	 Y= 0.3*R + 0.59*G + 0.11*B
+	U= (B-Y) * 0.493
+	V= (R-Y) * 0.877
+
+	同样反过来，YUV转换成RGB的公式如下：
+	R = Y + 1.14V
+	G = Y - 0.39U - 0.58V
+	B = Y + 2.03U
+
+	//Example for RGB to YV12
+	uint_8* pSrc = pRGBFrame->data[0];		//size  = width* height * 3;
+	uint_8* YUV_Image = new uint_8[width*height*3/2];
+	for(int i = 0; i < height ; i++)
+	{
+			bool isU = false;
+			if(i%2 == 0) isU = true;
+			for(int j = 0; j < width ; j++)
+			{
+				int pos = width * i + j;
+				uint_8_t B = pSrc[pos*3];
+				uint_8_t G = pSrc[pos*3 + 1];
+				uint_8_t R = pSrc[pos*3 + 2];
+				uint8_t Y = (uint8_t)(0.3*R + 0.59*G + 0.11*B);
+				uint8_t U = (uin8_t)(B-Y) * 0.493;
+				uint8_t V = (uint8_t)(Y - R)* 0.877;
+				YUV_Image[pos] = Y;
+				bool isChr = false;
+				if(j%2 == 0) isChr = true;
+				if(isChr && isU)
+				{
+					YUV_image[plane+(plane>>2) + uPos] = U;
+				}
+				if(isChr && !isU)
+				{
+					YUV_image[plane+(plane>>2) + vPos] = V;
+				}
+			}
+	}
+
+
+	YUV444P ->YUV420P(NV12)
+	for(int y = 0 ;u < height ; y ++)
+	{
+		memcpy(des+(dstStride*y),srcY+(srcStride*y),width);
+	}
+	for(int y = 0 ; y<height / 2 ; y++ )
+	{
+		for(int x = 0; x < width; x = x + 2)
+		{
+			desU+(dstStride*y) + x = srcU+(srcStride/2)*y + (x >> 1);
+			desV+(dstStride*y) + (x + 1)= srcV+(srcStride/2)*y + (x >> 1);
+		}
+	}
