@@ -1,0 +1,6 @@
+https://github.com/zhaohu19910409Dz/Note.git
+
+1£ºgit clone http:¡­¡­
+2£ºgit add .
+3£ºgit commit -m "mark"
+4£ºgit push https://github.com/zhaohu19910409Dz/Note.git

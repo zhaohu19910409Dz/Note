@@ -1,0 +1,58 @@
+(一):D3D11_USAGE
+
+typedef enum D3D11_USAGE{
+	D3D11_USAGE_DEFAULT				=  0,
+	D3D11_USAGE_IMMUTABLE		=	1,
+	D3D11_USAGE_DYNAMIC				=	2,
+	D3D11_USAGE_STAGINE				=	3,
+}D3D11_USAGE;
+
+D3D11_USAGE_DEFAULT:
+				资源可以被GPU读和写，这个是最常用。
+D3D11_USAGE_IMMUTABLE：
+				资源只能被GPU读，不能被GPU写，并且CPU操作该资源。这种资源必须在创建的时候被初始化，然后就不能够修改。
+D3D11_USAGE_DYNAMIC：
+				资源能够被GPU读和CPU写，如果CPU至少需要修改每帧那么动态纹理是一个不错的选择。更新动态资源使用Map方法。
+D3D1_USAGE_STAGING:
+				这种类型的资源支持数据从GPU拷贝到CPU.
+
+注意：
+ID3D11DeviceContext::CopySubresourceRegion：
+ID3D11DeviceContext::CopyResource:
+				使用这种copy方法来在两个相同的usage之间拷贝数据.
+ID3D11DeviceContext::UpdateSubresource：
+				从CPU提供的数据拷贝到其他类型的资源，通常使用在D3D11_USAGE_DEFAULT这种资源
+
+D3D11_USAGE_DYNAMIC:是一个优化了从CPU到GPU数据流的特殊情况，它动态的生成数据并已高频率发送数据到GPU，D3D11_USAGE_DYNAMIC通常和顶点数据和常量缓冲区一起使用。并且
+使用ID3D11DeviceContext::Map和ID3D11DeviceContext::Unmap方法来写这些资源。
+
+Note:
+			推荐使用ID3D11DeviceContext::UpdateSubresource来更新D3D11_USAGE_DEFAULT类型的资源
+			使用ID3D11DeviceContext::Map和ID3D11DeviceContext::UnMap来更新D3D11_USAGE_DYNAMIC类型的资源
+			使用ID3D11DeviceContext::CopyStructureCount是一个特殊的从GPU到CPU拷贝
+
+(二)：D3D11_CPU_ACCESS_FLAG enumeration
+			typedef		enum	D3D11_CPU_ACCESS_FLAG
+			{
+				D3D11_CPU_ACCESS_WRITE		=		0x10000L,
+				D3D11_CPU_ACCESS_READ		=		0x20000L
+			}D3D11_CPU_ACCESS_FLAG;
+
+			D3D11_CPU_ACCESS_WRITE：
+				资源是可以被映射的，这样CPU就可以改变他的内容。使用此标志创建的资源不能被设置为管道的输出，必须使用D3D11_USAGE_DYNAMIC或D3D11_USAGE_STAGINE使用创建
+			D3D11_CPU_ACCESS_READ：
+					资源可以被映射，这样CPU就可以读，必须使用D3D11_USAGE_STAGINE标记；
+			这个枚举类型通常被用在D3D11_BUFFER_DESC,D3D11_TEXTURE2D_DESC等等，
+			D3D11_RESOURCE_MISC_FLAG不能别使用当使用D3D11_CPU_ACCESS标记来创建资源。
+
+(三):	D3D11_MAP enumeration
+			typedef enum D3D11_MAP { 
+					D3D11_MAP_READ                = 1,
+					D3D11_MAP_WRITE               = 2,
+					D3D11_MAP_READ_WRITE          = 3,
+					D3D11_MAP_WRITE_DISCARD       = 4,
+					D3D11_MAP_WRITE_NO_OVERWRITE  = 5
+			} D3D11_MAP;
+		
+
+(四):	D3D11_RESOURCE_MISC_FLAG enumeration
