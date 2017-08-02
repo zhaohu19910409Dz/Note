@@ -1,0 +1,148 @@
+ID3DBlob* buffer = 0;
+RESULT d3dResult;
+bool compileResult = CompileD3DShader( "ColorInversion.fx", 0, "fx_5_0", &buffer );
+
+ID3DX11Effect* effect_;
+D3DX11CreateEffectFromMemory(buffer->GetBufferPointer(),buffer->GetBufferSize(),0,d3dDevice_,&effect_);
+
+D3D11_INPUT_ELEMENT_DESC solidColorLayout[]=
+{
+	{"POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERETEX_DATA,0},
+	{"TEXCOORD",0,DCGI_FORMAT_R32G32_FLOAT,0,12,D3D11_INPUT_PER_VERETEX_DATA,0}
+};
+
+unsigned int totalLayoutElements = ARRAYSIZE(solidColorLayout);
+
+ID3DX11EffectTechnique* colorInvTechnique;
+colorInvTechnique = effect_->GetTechniqueByName("ColorInversion");
+ID3DX11EffectPass* effectPass = colorInvTechnique->GetPassByIndex(0);
+
+D3DX11_PASS_SHADER_DESC passDesc;
+D3DX11_EFFECT_SHADER_DESC shaderDesc;
+effectPass->GetVertexShaderDesc(&passDesc);
+passDesc.pShaderVatiable->GetShaderDesc(passDesc.ShaderIndex,&shaderDesc);
+
+d3dResult = d3dDevice_->CreateInputLayout(solidColorLayout,totalLayoutElements,shaderDesc.pBytecode,
+				shaderDesc.BytecodeLength,&inputLayout_);
+				
+buffer->Release();
+
+//render
+float clearColor[4] = { 0.0f, 0.0f, 0.25f,1.0f};
+d3dContex_->ClearRenderTargetView(backBufferTarget_,clearColor);
+d3dContex_-->ClearDepthStencilVIew(depthStencilView_,D3D11_CLEAT_DEPTH,1.0f,0);
+
+unsigned int stride = sizeof(VertexPos);
+unsigned int offset = 0;
+
+d3dContex_->IASetInputLayout(inputLayout_);
+d3dContex_->IASetVertexBuffers(0,1,&vertexBuffer_,&stride,&offset);
+d3dContex_->IASetIndexBuffer(indexBuffer_,DXGI_FORMAT_R16_UINT,0);
+d3dContex_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+XMMATRIX rotationMat = XMMatrixRotationRollPitchYaw(0.0f,0.7f,0.7f);
+XMMATRIX translationMat = XMMatrixTranslation(0.0f,0.0f,6.0f);
+XMMATRIX worldMat = rotationMat * translationMat;
+
+ID3DX11EffectShaderResourceVariable* colorMap;
+colorMap = effect_->GetVariableByName("colorMap")->AsShaderResource();
+colorMap->SetResource(colorMap_);
+
+ID3DX11EffectSamplerVariable* colorMapSampler;
+colorMapSampler = effect_->GetVariableByName("colorSampler")->AsSampler();
+colorSampler->SetSampler(0,colorMapSampler);
+
+ID3DX11EffectMatrixVariable* worldMatrix;
+worldMatrix = effect_->GetVariableByName("worldMatrix")->AsMatrix();
+worldMatrix->SetMatrix((float*)&worldMat);
+
+ID3DX11EffectTechnique* colorInvTechnique;
+colorInvTechnique = effect_->GetTechniqueByName("ColorINversion");
+
+D3DX11_TECHNIQUE_DESC techDesc;
+colorInvTechnique->GetDws(&techDesc)£»
+for(unsigned int p = 0, p < techDesc.Passed;p++)
+{
+	ID3DXEffectPass* pass = colorInvTechnique->GetPassByIndex(p);
+	if(pass != 0)
+	{
+		pass->Apple(0,dedContext_);
+		d3dContext_->DrawIndexed(36,0,0);
+	}
+}
+
+swapChain_->Present(0,0);
+
+//´´½¨Effect
+//CompileD3DShader(----------------------------)
+	DWORD shaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+#if defined(DEBUG) || defined(_DEBUG)
+	shaderFlags |= D3DCOMPILE_DEBUG;
+#endif
+	ID3DBlob* errorBuffer = 0;
+	HRSULT rsult;
+	result = D3DX11CompileFromFile(filePath,0,0,0,"fx_5_0",shaderFlags,0,0,buffer,*errorBuffer,0);¡¢
+	
+	
+	
+/////////////////////////////////shader source/////////////////////////////////
+Texture2D colorMap : register( t0 );
+SamplerState colorSampler : register( s0 );
+
+
+cbuffer cbChangesEveryFrame : register( b0 )
+{
+    matrix worldMatrix;
+};
+
+cbuffer cbNeverChanges : register( b1 )
+{
+    matrix viewMatrix;
+};
+
+cbuffer cbChangeOnResize : register( b2 )
+{
+    matrix projMatrix;
+};
+
+
+struct VS_Input
+{
+    float4 pos  : POSITION;
+    float2 tex0 : TEXCOORD0;
+};
+
+struct PS_Input
+{
+    float4 pos  : SV_POSITION;
+    float2 tex0 : TEXCOORD0;
+};
+
+
+PS_Input VS_Main( VS_Input vertex )
+{
+    PS_Input vsOut = ( PS_Input )0;
+    vsOut.pos = mul( vertex.pos, worldMatrix );
+    vsOut.pos = mul( vsOut.pos, viewMatrix );
+    vsOut.pos = mul( vsOut.pos, projMatrix );
+    vsOut.tex0 = vertex.tex0;
+
+    return vsOut;
+}
+
+
+float4 PS_Main( PS_Input frag ) : SV_TARGET
+{
+    return 1.0f - colorMap.Sample( colorSampler, frag.tex0 );
+}
+
+
+technique11 ColorInversion
+{
+    pass P0
+    {
+        SetVertexShader( CompileShader( vs_5_0, VS_Main() ) );
+        SetGeometryShader( NULL );
+        SetPixelShader( CompileShader( ps_5_0, PS_Main() ) );
+    }
+}

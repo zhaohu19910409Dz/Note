@@ -1,0 +1,40 @@
+#include<dinput.h>
+
+LPDIRECTINPUT8 directInput_;
+LPDIRECTINPUTDEVICE8 keyboardDevice_;
+char keyboardKeys_[256];
+char prevKeyboardKeys_[256];
+
+
+ZeroMemory(keyboardKeys_,sizeof(keyboardKeys_));
+ZeroMemory(prevKeyboardKeys_,sizeof(prevKeyboardKeys_));
+
+HRESULT result = DirectInput8Create(hInstance_,DIRECTINPUT_VERSION,IID_IDirecctInput8,(void**)&directInput_,0);
+
+if(FAILED(result)) return false;
+
+result = directInput_->CreateDevice(GUID_SysKeyboard,&keyboardDevice_,0);
+
+if(FAILED(result)) return false;
+
+result = keyboardDevice_->SetDataFormat(&c_dfDKeyboard);
+if(FAILED(result)) return false;
+
+result = keyboardDevice_->SetCooperativeLevel(hsnd_,DISCL_FOREGROUND | DISCL_NONECXLUSIVE)£»
+if(FAILED(result)) return false;
+
+result = keyboardDevice_->Acquire();
+if(FAILED(result)) return false;
+
+
+//Update 
+
+keyboardDevice_->GetDeviceState(sizeof(keyboardKeys_),(LPVOID)&keyboardKeys_);
+
+if(GetAsyncKeyState(VK_ESCAPE)) PostQuitMessage(0);
+
+if((prevKeyboardKeys_[DIK_DOWN)&0x80) && (keyboardKeys_[DIK_DOWN)&0x80))
+{
+}
+
+ memcpy( prevKeyboardKeys_, keyboardKeys_, sizeof( keyboardKeys_ ) );

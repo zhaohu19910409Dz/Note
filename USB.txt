@@ -1,0 +1,63 @@
+1:查找USB设备
+	HID类设备是通过ＧＵＩＤ类型值来做标识的，通过函数Hidd_GetHidGUid(&guidHID)可以获得HID设备的标识
+	调用函数HiddD_GetAttributes(hCom,&strAttrib);获取特定的HID设备属性,其中和hCom是对应与选定设备的句柄
+	在查找的过程中还需要调用其他和硬件相关的API函数，这些函数都在SetupAPI.h中定义;
+	@：获取一类设备的信息，SetupDiGetClassDevs
+			HDEVINFO hDevInfo = SetupDiGetClassDevs(
+					&guidHID,
+					NULL,
+					0,
+					DIGCF_PRESENT|DIGCF_DEVICEINTERFACE);
+	@:获取一个设备信息，SetupDiEnumDeviceInterfaces，如果需要找到特定的设备，可以在循环语句内调用该函数，知道找到预期设备或函数返回FALSE
+			BOOL bSuccess = SetupDiEnumDeviceInterface(
+					hDevInfo,
+					NULL,
+					&guidHD,
+					0,
+					&strInterfaceData);
+	
+2:与USB设备进行数据交换
+	在Windows中，读写端口与文件都是调用同一样的API函数，打开或创建端口调用CreateFile从端口读取数据调用ReadFile，向端口写数据调用WriteFile
+		@：设备的打开和关闭，调用API函数CreateFile来打开或创建设备
+					HANDLE hCom = CreateFile(
+							m_strPath,// 指定打开设备名
+							GENERIC_READ | GENERIC_WRITE,//允许读写
+							0,// 独占方式
+							NULL,// 安全模式
+							OPEN_EXISTING,// 打开
+							FILE_ATTRIBUTE_NORMAL,// 文件属性
+							NULL // 临时文件的句柄);
+					注意：如果调用成功则返回文件的句柄；如果调用失败，则返回INVALID_HANDLE_VALUE，在打开通信设备时，应该以独占的方式打开，不再使用,应该调用CloseHandle(hCom)来关闭它;
+		@:设备的读写操作，读写通信设备可用同步方式来执行，也可以异步方式执行，这个是由CreateFile函数中是否指定FILE_FLAG_OVERLAPPED来决定;指定为异步方式，未指定则为同步方式，函数ReadFile和WriteFile的参数和返回类型
+				HANDLE hCom;
+				void	*pBuffer;			// 读到的数据，需要先申请内存空间
+				DWORD iLength;		//	需要读的数据长度
+				DWORD pReadFact;	// 实际读到的数据长度
+				BOOL ReadFile(hCom,pBuffer,iLength,&pReadFact,NULL);
+				注意：在读写设备之前，应该先调用ClearCommError函数来清除错误标志，此函数负责指定的错误的设备的当前状态，调用PrugeComm函数可以更改正在进行的读写操作方式
+
+	3:读写虚拟串口
+		读写之前需要首先打开串口
+		HANDLE hCom = Create(path,GENERIC_READ|GENERIC_WRITE,0,NULL,OPEN_EXISTING,0,NULL);
+		if(hCom == INVALID_HANDLE_VALUE)
+			return false;
+		SetupComm(hCom,1024,1024);初始化一个指定的通信设备的通信参数（以字节为单位，对设备的内部输入输出缓冲区大下指定）
+		COMMTIMEOUTS TimeOuts;
+		TimeOuts.ReadIntervalTimeout = MAXDWORD;//读取间隔超时
+		TimeOuts.ReadTotalTimeoutMultiplier = 0;	//读时间系数
+		TimeOuts.ReadTOtalTimeoutConstant = 0;//读时间常量
+		TimeOuts.WriteTotalTimeoutMultiplier = 100;//写时间系数
+		SetCommTimeouts(hCom,&TimeOuts);//设置超时
+
+		DCB dcb;
+		GetCommState(hCom,&dcb);
+		dcb.BaudRate = 4608000;设置波特率
+		dcb.ByteSize = 8;
+		dcb.Parity = NOPARITY;
+		dcb.StopBits = ONESTOPBIT;
+		SetCommState(hCom, &dcb);
+
+		PurgeComm(hCom,PURGE_TXCLEAR|PURGE_RXCLEAR);
+
+		char str[] =  new char[4096];
+		ReadFile(hCom,str,wcount,&wcout,NULL);

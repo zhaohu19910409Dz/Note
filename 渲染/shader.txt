@@ -1,0 +1,153 @@
+cbuffer cbChangesPerFrame : register( b0 )
+{
+    matrix mvp_;
+};
+
+
+Texture2D colorMap_ : register( t0 );
+SamplerState colorSampler_ : register( s0 );
+
+
+struct VS_Input
+{
+    float4 pos  : POSITION;
+    float2 tex0 : TEXCOORD0;
+};
+
+struct PS_Input
+{
+    float4 pos  : SV_POSITION;
+    float2 tex0 : TEXCOORD0;
+};
+
+
+PS_Input VS_Main( VS_Input vertex )
+{
+    PS_Input vsOut = ( PS_Input )0;
+    vsOut.pos = mul( vertex.pos, mvp_ );
+    vsOut.tex0 = vertex.tex0;
+
+    return vsOut;
+}
+
+
+float4 PS_Main( PS_Input frag ) : SV_TARGET
+{
+    return colorMap_.Sample( colorSampler_, frag.tex0 );
+}
+
+//t0 s0 b0
+传入值得方式
+d3dContext_->PSSetShaderResources( 0, 1, &colorMap_ );
+d3dContext_->PSSetSamplers( 0, 1, &colorMapSampler_ );
+d3dContext_->VSSetConstantBuffers( 0, 1, &mvpCB_ );
+
+ID3DBlob* vsBuffer = 0;
+//bool comileResult = CompileD3DShader("TextureMap.fx","VS_Main","vs_4_0",&vsBuffer);
+if(compileResult == false) return false;
+ID3DBlob* errorBuffe = 0;
+HRESULT	result;
+
+result = D3DX11CompileFromFile("TextureMap.fx",0,0,"VS_Main","vs_4_0",D3DCOMPILE_ENABLE_STRICENESS,0,0,vsBuffer,&errorBuffe,0);
+if(FAILED(result)
+{
+	if(errorBuffe != 0) errorBuffe->release();
+}
+
+if(errorBuffe != 0) errorBuffe->release();
+
+HRESULT d3dResult;
+ID3DVertexShader* vsShader = 0;
+d3dResult = d3dDevice_->CreateVertexShader(vsBuffer->GetBufferPointer(),vsBuffer->GetBufferSize(),0,&vsShader);
+if(FAILED(d3dResult))
+{
+	if(vsBuffer) vsBuffer->Release();
+	return false;
+}
+
+D3D11_INPUT_ELEMENT_DES vsLayout[]=
+{
+	{"POSITION",0,DCGI_FORMART_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0}.
+	{"TEXCOORD",0,DXGI_FORMAT_R32G32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0}
+};
+
+unsigned int totalLayoutElements = ARRAYSIZE(vsLayout);
+
+ID3D11InputLayout* inputLayout_ = 0;
+d3dResutl = d3dDevice_->CreateInputLayout(vsLayout,totalLayoutElements,vsBuffer->GetBufferPointer,vsBuffer->GetBufferSize,&inputLayout_);
+vsBuffer_->Release();
+
+
+//创建ConstantBuffer
+D3D11_BUFFER_DESC constDesc;
+ZeroMemory(&constDesc，sizeof(constDesc));
+constDesc.BindFlag = D3D11_BIND_CONSTANT_BUFFER;
+constDesc.ByteWidth = sizeof(XMMATRIX);
+constDesc.Usage = D3D11_USAGE_DEFAULT;
+
+ ID3D11Buffer* mvpCB_;
+d3dResult = d3dDevice_->CreateBuffer(&constDesc,-,&mvpCB_)'
+
+//更新constBuffer
+d3dConetxt_->UpdateSubresource(mvpCB_,0,0,&data,0,0);
+d3dContext_->PSSetConstantBuffers(0,1,&mvpCB_);
+/////////////////////////////////////////////////////////
+
+ID3D11Buffer*   g_pConstantBuffer11 = NULL;
+
+// Define the constant data used to communicate with shaders.
+struct VS_CONSTANT_BUFFER
+{
+    XMFLOAT4X4 mWorldViewProj;                              
+    XMFLOAT4 vSomeVectorThatMayBeNeededByASpecificShader;
+    float fSomeFloatThatMayBeNeededByASpecificShader;
+    float fTime;                                            
+    float fSomeFloatThatMayBeNeededByASpecificShader2;
+    float fSomeFloatThatMayBeNeededByASpecificShader3;
+} VS_CONSTANT_BUFFER;
+
+// Supply the vertex shader constant data.
+VS_CONSTANT_BUFFER VsConstData;
+VsConstData.mWorldViewProj = {...};
+VsConstData.vSomeVectorThatMayBeNeededByASpecificShader = XMFLOAT4(1,2,3,4);
+VsConstData.fSomeFloatThatMayBeNeededByASpecificShader = 3.0f;
+VsConstData.fTime = 1.0f;
+VsConstData.fSomeFloatThatMayBeNeededByASpecificShader2 = 2.0f;
+VsConstData.fSomeFloatThatMayBeNeededByASpecificShader3 = 4.0f;
+
+// Fill in a buffer description.
+D3D11_BUFFER_DESC cbDesc;
+cbDesc.ByteWidth = sizeof( VS_CONSTANT_BUFFER );
+cbDesc.Usage = D3D11_USAGE_DYNAMIC;
+cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+cbDesc.MiscFlags = 0;
+cbDesc.StructureByteStride = 0;
+
+// Fill in the subresource data.
+D3D11_SUBRESOURCE_DATA InitData;
+InitData.pSysMem = &VsConstData;
+InitData.SysMemPitch = 0;
+InitData.SysMemSlicePitch = 0;
+
+// Create the buffer.
+hr = g_pd3dDevice->CreateBuffer( &cbDesc, &InitData, 
+                                 &g_pConstantBuffer11 );
+
+if( FAILED( hr ) )
+   return hr;
+
+// Set the buffer.
+g_pd3dContext->VSSetConstantBuffers( 0, 1, &g_pConstantBuffer11 );
+
+
+This example shows the associated HLSL cbuffer definition.
+cbuffer VS_CONSTANT_BUFFER : register(b0)
+{
+    matrix mWorldViewProj;
+    float4  vSomeVectorThatMayBeNeededByASpecificShader;
+    float fSomeFloatThatMayBeNeededByASpecificShader;
+    float fTime;
+    float fSomeFloatThatMayBeNeededByASpecificShader2;
+    float fSomeFloatThatMayBeNeededByASpecificShader3;
+};

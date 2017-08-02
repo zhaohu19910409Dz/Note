@@ -1,0 +1,195 @@
+1:崩溃问题
+	由于高频率获取DC异常导致。
+	void D3D11Texture2D::Copy2Window(void* srcdc, uint32_t left, uint32_t top, uint32_t dw, uint32_t dh)
+	{
+		IDXGISurface1* pSurface1 = NULL;
+		HRESULT hr = mTex->QueryInterface(__uuidof(IDXGISurface1), (void**)&pSurface1);
+		if (hr == S_OK)
+		{
+			HDC srcDC = NULL;
+			hr = pSurface1->GetDC(false, &srcDC);
+			if (hr == S_OK)
+			{
+				BitBlt((HDC)srcdc, left, top, dw, dh, srcDC, 0, 0, SRCCOPY);
+				pSurface1->ReleaseDC(NULL);
+			}
+		}
+	}
+	目的：将最终的像素图像copy到窗口上，该方式经常崩溃
+	解决方法：创建一个新的窗口（该窗口为需要显示的窗口的子窗口），使用rtt渲染到新窗口、
+	
+	m_pForeTex = (IOEye::D3D11Texture2D*)m_pRender->CreateTexture(IOEye::TT_TextureRT, \
+				m_nWidth, m_nHeight, \
+				IOEye::TF_RGBA32, IOEye::TF_SharedResource);
+			::SendMessage(m_hPreviewWnd, WM_SETPREVIEWTEXTURE, 0, (LPARAM)m_pForeTex->GetSharedHandle());
+			::SendMessage(::FindWindowEx(NULL,NULL,_T("IOEHdmiWndClass"),_T("IOEHDMI")), WM_SETPREVIEWTEXTURE, 0, (LPARAM)m_pForeTex->GetSharedHandle());
+			
+	Texture* D3D11RenderDevice::CreateTexture(TextureType tt, int tw, int th, TextureFormat tf, TextureFlag tflag)
+	{
+		switch (tt)
+		{
+		case TT_Texture1D:
+		{
+			return 0;
+		}
+		break;
+		case TT_Texture2D:
+		{
+			D3D11Texture2D* texture = new D3D11Texture2D(this);
+
+			D3D11_TEXTURE2D_DESC desc = { 0 };
+			memset(&desc, 0, sizeof(desc));
+
+			desc.ArraySize = 1;
+			desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+			desc.Usage = D3D11_USAGE_DYNAMIC;			
+			desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+			desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED;
+			desc.MiscFlags = 0;
+			//desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+			desc.Width = tw;
+			desc.Height = th;
+			desc.MipLevels = 1;
+			desc.MiscFlags = 0;
+			desc.SampleDesc.Count = 1;
+			desc.SampleDesc.Quality = 0;
+
+
+
+			switch (tf)
+			{
+			case TF_RGBA32:
+				desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+				break;
+			case TF_BGRA32:
+				desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+				break;
+			default:
+				desc.Format = DXGI_FORMAT_UNKNOWN;
+				break;
+			}
+
+			HRESULT hr = mDevice->CreateTexture2D(&desc, NULL, &(texture->mTex));
+			if (FAILED(hr))
+			{
+				LogError(_T("CreateTexture2D failed."), hr);
+				return NULL;
+			}
+
+			hr = mDevice->CreateShaderResourceView(texture->mTex, 0, &(texture->mTexSv));
+			if (FAILED(hr))
+			{
+				LogError(_T("CreateShaderResourceView failed."), hr);
+				texture->mTex->Release();
+				return NULL;
+			}
+
+			texture->mWidth = tw;
+			texture->mHeight = th;
+			texture->mSamples = 1;
+			texture->mFormat = tf;
+
+			return texture;
+		}
+		case TT_TextureRT:
+		{
+			D3D11Texture2D* texture = new D3D11Texture2D(this);
+
+			D3D11_TEXTURE2D_DESC desc = { 0 };
+			memset(&desc, 0, sizeof(desc));
+
+			desc.ArraySize = 1;
+			desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+			desc.Usage = D3D11_USAGE_DEFAULT;
+			desc.CPUAccessFlags = 0;
+			//desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+			desc.Width = tw;
+			desc.Height = th;
+			desc.MipLevels = 1;
+			desc.MiscFlags = 0;
+			desc.SampleDesc.Count = 1;
+			desc.SampleDesc.Quality = 0;
+
+			if (tflag & TF_GDIResource)
+			{
+				desc.MiscFlags |= D3D11_RESOURCE_MISC_GDI_COMPATIBLE;
+			}
+			else if (tflag & TF_SharedResource)
+			{
+				desc.MiscFlags |= D3D11_RESOURCE_MISC_SHARED;
+			}
+
+			switch (tf)
+			{
+			case TF_RGBA32:
+				desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+				break;
+			case TF_BGRA32:
+				desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+				break;
+			default:
+				desc.Format = DXGI_FORMAT_UNKNOWN;
+				break;
+			}
+
+			HRESULT hr = mDevice->CreateTexture2D(&desc, NULL, &(texture->mTex));
+			if (FAILED(hr))
+			{
+				LogError(_T("CreateTexture2D failed."), hr);
+				return NULL;
+			}
+
+			IDXGIResource* pDXGIResource = 0;
+			hr = texture->mTex->QueryInterface(__uuidof(IDXGIResource), (void **)&pDXGIResource);
+			if (FAILED(hr))
+			{
+				LogError(_T("CreateSharedHandle failed."), hr);
+			}
+			pDXGIResource->GetSharedHandle(&texture->mSharedHandle);
+			pDXGIResource->Release();
+
+			hr = mDevice->CreateShaderResourceView(texture->mTex, 0, &(texture->mTexSv));
+			if (FAILED(hr))
+			{
+				LogError(_T("CreateShaderResourceView failed."), hr);
+				texture->mTex->Release();
+				return NULL;
+			}
+
+			hr = mDevice->CreateRenderTargetView(texture->mTex, NULL, &texture->mTexRtv);
+			if (FAILED(hr))
+			{
+				LogError(_T("CreateRenderTargetView failed."), hr);
+				texture->mTex->Release();
+				return NULL;
+			}
+
+			texture->mWidth = tw;
+			texture->mHeight = th;
+			texture->mSamples = 1;
+			texture->mFormat = tf;
+
+			return texture;
+		}
+		default:
+			return NULL;
+		}
+	}
+
+	在其他的窗口获取该共享纹理，然后进行渲染；
+	m_hPreviewTextureHandle = (HANDLE)lParam;
+	m_pPreviewTexture = (IOEye::D3D11Texture2D*)m_pPreviewRender->CreateTexture(IOEye::TT_Texture2D, m_hPreviewTextureHandle);
+	m_pPreviewQuad->SetSubMeshTexture(0, m_pPreviewTexture);
+				
+2:增加HDMI输出(使用SDL方案发现map纹理过慢，4K画质需要200ms，导致卡顿，更改为开启一个新的进程使用共享纹理方案)
+
+3:小纹理可拖动大小位置方案更改为直接使用大纹理（导致加载过慢，显存消耗过度)->进行资源释放，以减小资源的利用(任然效果不佳)->使用freeImage进行纹理裁剪，建立大量定点和索引，由于频繁创建顶点和纹理是的CPU频繁和GPU进行交互，导致创建顶点索引和纹理异常，更改为
+	（1）：使用配置文件进行顶点计算出各个顶点坐标
+	（2）：根据顶点进行纹理的裁剪，裁剪为小纹理
+	（3）：根据顶点坐标一次性创建一个序列帧的所有顶点和索引
+	（4）：然后更具图片的路径创建出静态纹理（将所有的操作提交给GPU，减少异常发生的可能）
+	
+	由于创建顶点缓存等等是通过PCI_Express总线，速度相对于CPU访问缓存和GPU访问缓存非常慢，所以进行CPU GPU交互的时候非常容易异常
+4:时间线逻辑的更改（设计变更)
+
+

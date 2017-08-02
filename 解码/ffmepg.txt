@@ -1,0 +1,172 @@
+1：ffmpeg解码流程 拆包，构建队列，解码，同步，显示
+
+//计算视频Frame的显示时间
+//获取pts
+pts = 0;
+//decodec video frame
+avcodec_decode_video2(AVFormatContxt*,AVFrame,int*,AVPacket);
+if( (pts = av_frame_get_best_effort_timestamp(pFrame)) == AV_NOPTS_VALUSE )
+{
+
+}
+else
+{
+	pts = 0;
+}
+
+pts *= av_q2d(pFormatCtx->Stream[video_index]->time_base);
+
+if(frameFinished)
+{
+	//计算需要的时间延时
+	//pts = synchronize_video(……);
+	
+}
+
+//synchronize_video(^)函数的实现
+//video_clock是视频播放到当前帧时的已播放的时间长度。在synchronize函数中，如果没有得到该帧的PTS就用当前的video_clock来近似，然后更新video//_clock的值。到这里已经知道了video中frame的显示时间了（秒为单位)
+double synchronize_video(VideoState *is,AVFrame *src_frame,double pts)
+{
+	double frame_delay;
+	if(pts != 0)
+	{
+		is->video_clock = pts;//保存pts
+	}
+	else
+	{
+		pts = is->video_clock;//否者使用上一次保存的pts
+	}
+	//更新video clock
+	frame_delay = av_q2d(is->video_ctx->time_base);
+	frame_delay += src_frame->repeat_pict * (frame_delay * 0.5);
+	is->video_clock += frame_delay;
+	return pts;	
+}
+
+//获取Audio Clock
+//Audio Clock，也就是Audio的播放时长，可以在Audio时更新Audio Clock。在函数audio_decode_frame中解码新的packet，这是可以设置Auddio //clock为该packet的PTS
+if (pkt.pts != AV_NOPTS_VALUE)
+{
+    audio_state->audio_clock = av_q2d(audio_state->stream->time_base) * pkt.pts;
+}
+//由于一个packet中可以包含多个帧，packet中的PTS比真正的播放的PTS可能会早很多，可以根据Sample Rate 和 Sample //Format来计算出该packet中的数据可以播放的时长，再次更新Audio clock 。
+// 每秒钟音频播放的字节数 sample_rate * channels * sample_format(一个sample占用的字节数)
+audio_state->audio_clock += static_cast<double>(data_size) / (2 * audio_state->stream->codec->channels *            
+        audio_state->stream->codec->sample_rate);
+//上面乘以2是因为sample format是16位的无符号整型，占用2个字节。		
+for(;;)
+{
+	while(is->audip_pkt_size > 0)
+{
+	int got_frame = 0;
+	len1 = avcodec_decode_audio(is->audio_ctx,&is_audio_frame,&got_frame,pkt);
+	if(len1 < 0)
+	{
+		is->audio_pkt_size = 0;
+		break;
+	}
+	data_size = 0;
+	if(got_frame)
+	{
+		data_size = av_sample_get_buffer_size(NULL,is->audio_ctx->channels,is->audip_frame.nb_samples,is->audio_ctx->sample_fmt,1);
+		assert(data_size <= buf_size);
+		memcpy(audio_buf,is->audio_frame.data[0],data_size);
+	}
+	is->audio_pkt_data += len1;
+	is->audip_pkt_size -= len1;
+	if(data_size <= 0)
+		continue;
+	pts = is->audio_clock;
+	*pts_pts = pts;
+	n = 2 * is->audio_ctx->channles;
+	is->audio_clock += (double)data_size / double(n * is->audio_ctx->sample_rate);
+		return data_size;
+}
+if(pke->data)
+	av_free_packet(pkt);
+if(is->quit)
+{
+	return -1;
+}
+
+//read next packet
+if(packet_queue_get(&is_audioqmpkt,1) < 0)
+	return -1;
+is->audip_pkt_data = pkt->data;
+is->audip_pkt_size = pkt->size;
+if(pkt->pts != AV_NOPTS_VALUE) 
+{
+	is->audio_clock = av_q2d(is->audio_st->time_base)* pkt->pts;
+}
+}
+
+
+//有了Audio clock后，在外面获取该值的时候却不能直接返回该值，因为audio缓冲区的可能还有未播放的数据，需要减去这部分的时间
+
+double AudioStatue::Get_audip_clock()
+{
+	int hw_buf_size = audio_buff_size - audio_buff_index;
+	int bytes_pre_sec = steam->codec->sample_rate * audio_ctx->channels * 2;
+	double pts = (audio_clock - static_cast<double>(hw_buf_size)/bytes_pre_sec;
+	return pts;
+}
+
+//audio缓冲区中剩余的数据除以每秒播放的音频数据得到剩余数据的播放时间，从Audio clock中减去这部分的值就是当前的audio的播放时长。
+
+
+//同步
+1:用当前的pts - 上一播放帧的pts得到一个时延
+2:用当前帧的pts和Audio Clock进行比较，来判断视频的播放速度是快了还是慢了
+3:根据上一步判断结果，设置播放下一阵的延迟时间
+
+double current_pts = *(double*)video->frame->opaque;
+double delay = current_pts - video->frame_last_pts;
+if(delay < = 0 || delay >= 1.0)
+	delay = video->frame_last_delay;
+	
+video->frame_last_delay = delay;
+video->frame_last_pts = current_pts;
+//根据Audio Clock来判断Video播放的快慢
+double ref_clock = media->audio->get_audio_clock();
+
+double diff = current_pts - ref_clock;
+
+double threshold = (delay > SYNC_THRESHOLD) ? delay L SYNV_THRESHOLD;
+
+//调整播放下一阵的延迟时间，以实现同步
+if(fabs(diff) < NOSYNC_THRESHOLD)
+{
+	if(diff <= -threashold)//慢了
+		delay = 0;
+	else if(diff >= threshold)
+		delay *= 2;
+}
+
+video->frame_timer += delay;
+double actual_delay = video->frame_timer = static_cast<double>(av_gettime())/1000000.0;
+if(actual_delay <= 0.010)
+	actual_delay = 0.010;
+	
+//设置下一帧的播放延迟
+schedule_refresh(media,static_cast<int>(actual_delay * 1000 + 0.5));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
