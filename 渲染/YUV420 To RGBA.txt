@@ -1,0 +1,33 @@
+1:分别使用三个纹理来存取YUV420P格式的Y,U,V数据，然后将三个纹理同时送入Shader中去采样，
+	依次取得Y,U,V数据。然后在每次采样的时候分别在三个纹理中采样YUV然后进行到RGB的转换
+	
+	example：
+		（1）：顶点Shader：
+		uniform mat4 matrix;
+		layout(location = 0) in vec4 position;
+		layout(location = 1) in vec2 v2UVcoordsIn;
+		layout(location = 2) in vec3 v3NormalIn;
+		out vec2 v2UVcoords;
+		void main()
+		{
+			v2UVcoords = v2UVcoordsIn;
+			gl_Position = matrix * position;
+		}
+		（2）：像素Shader
+		uniform sampler2D mytexture0;
+		uniform sampler2D mytexture1;
+		uniform sampler2D mytexture2;
+		in vec2 v2UVcoords;
+		out vec4 outputColor;
+		void main()
+		{
+		   vec2 uv = v2UVcoords;
+		   uv.y = 1.0 - uv.y;
+		   float y = texture(mytexture0, uv).r;
+		   float v = texture(mytexture2, uv).r - 0.5;
+		   float u = texture(mytexture1, uv).r - 0.5;
+		   float rr = y + 1.13983 * v;
+		   float gg = y - 0.39465 * u - 0.58060 * v;
+		   float bb = y + 2.03211 * u;
+		   outputColor = vec4(rr,gg,bb,1.0);
+		}

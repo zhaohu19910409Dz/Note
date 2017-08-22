@@ -1,0 +1,11 @@
+1:CreateDXGIFactorty funciton:
+	Header：
+		DXGI.h
+	Library：
+		DXGI.lib
+	DLL：
+		DXGI.dll
+
+		HRESULT CreateDXGIFactory(REFID riid,void **ppFactory);
+	创建一个DXGI 1.0的工厂来创建其他的DXGI对象。比如:枚举适配器，创建交换量和关联窗口。
+	为了避免内存泄漏，当结束的时候调用IDXGIFactory::Release来释放接口。
