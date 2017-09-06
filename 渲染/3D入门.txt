@@ -1,0 +1,246 @@
+1:XNA数学库 
+
+XNA使用函数(Utilities)
+点（Point)
+向量 (Vectors)
+	XMFLOAT2 :2D向量
+	XMFLOAT3:	3D向量
+	XMFLOAT4:	4D向量
+
+	注意:XNA中另一个有效的向量结构是XMVECTOR，他是一个经过优化的4D向量。该结构不仅可以快速映射到硬件的寄存器中，而且具有轻便和内存对齐的特性.
+	函数:
+		XMLoadFloat2，
+		eg:	XMVECTOR XMLoadFloat2(CONST XMFLOAT2* pSource);
+
+		存储函数:
+			VOID XMStoreFloat2(XMFLOAT2* pDestination,XMVECTOR v);
+		获取函数:
+			FLAOT XMVectorGetX(XMVECTOR v);
+			VOID XMVectorGetPtr(FLOAT* x , XMVECTOR v);
+		设置函数:
+			XMVECTOR XMVectorSetX(XMVECTOR v,FLOAT x);
+			XMVECTOR XMVectorSetPtr(XMVECTOR v,CONST FLOAT* x);
+
+			XMVECTOR XMVectorAdd(XMVector v1,XMVECTOR v2);
+			XMVECTOR XMVectorSubtract(XMVECTOR v1,XMVECTOR v2);
+			XMVECTOR XMVectorDivide(XMVECTOR v2,XMVECTOR v2);
+			XMVECTOR XMVectorMutiply(XMVECTOR v1,XMVECTOR v2);
+
+	向量的距离:
+		Vector x1,x2;
+		float xDistance = x2.x - x1.x;
+		float yDistance = x2.y - x1.y;
+		float distance = square_root(xDistance*xDistance + yDistance*yDistance);
+向量的长度:
+		sqrt(vectorX*vectorX + vectorY*vectorY+vectorZ*vectorZ);
+
+单位化向量:
+	Vector3 vec;
+	float length = Length(vec);
+	vec.X = vec.X / length;
+	vec.Y = vec.Y / length;
+	vec.Z = vec.Z / length;
+
+	XMVECTOR XMVector2Normalize(XMVECTOR v);
+	XMVECTOR XMVector3Normalize(XMVECTOR v);
+
+叉集(Cross Product)
+	同于计算同时垂直于两向量的另一向量.通常用于计算三角形的法线
+	XMVECTOR XMVector2Cross(XMVECTOR v1,XMVECTOR v2);
+	XMVECTOR XMVector3Cross( XMVECTOR V1, XMVECTOR V2 ; 
+	XMVECTOR XMVector4Cross( XMVECTOR V1, XMVECTOR V2 ); 
+
+	点积（Dot　product)
+		用于计算两个向量的角度。还在计算机图形学中有其他诸多应用，比如背面剔除，光照等。
+		XMVECTOR XMVector2Dot(XMVECTOR v1,XMVECTOR v2);
+		XMVECTOR XMVector3Dot(XMVECTOR v1,XMVECTOR v2);
+
+	3D 空间(3D Space)
+		世界变换(World Transformations)
+		视图变换(View Transformations）
+		投影变换(Projection Transformations)
+		变换物体(Transformation Object)
+
+	矩阵(Matrices)
+		游戏编程里面，矩阵可以将物体从一个坐标系统变换到另一个坐标系统。
+		矩阵是一个4X4个位于方格中数字组成，以行和列的形式排列。矩阵中第一二三行分别用于X，Y，Z轴。最后一行包含平移变换偏移量。
+	单位矩阵：
+		创建单位矩阵:XMMatrixIdentity即可。
+
+缩放矩阵:
+		 Y 轴方向放大 3 倍。一个 ScaleMatrix 矩阵的例子如下，变量 scaleX， scaleY，scaleZ 表示各轴方向上的缩放值：
+		  float ScaleMatrix [4][4] = 
+		  { 
+			scaleX,  0.0f,    0.0f,  0.0f,
+			0.0f,  scaleY,  0.0f,  0.0f, 
+			0.0f,   0.0f,   scaleZ,   0.0f, 
+			0.0f,  0.0f,   0.0f,   1.0f 
+			}; 
+			//使用XMMatrixScaling来创建缩放矩阵
+			XMMATRIX XMMatrixScaling(FLOAT ScaleX,FLOAT ScaleY,FLOAT ScaleZ);
+			 
+平移矩阵：
+		如果你想将物体向 X 轴正向移动 4 个单位，只需将 moveX 设置为 4。
+		float matrix [4][4] = { 
+												1.0f,  0.0f,  0.0f,  0.0f, 
+												0.0f,  1.0f,  0.0f,  0.0f, 
+												0.0f,  0.0f,  1.0f,  0.0f, 
+												moveX,  moveY,  moveZ,  1.0f
+												 }; 
+
+		XMMATRIX XMMatrixTranslation(FLOAT OffsetX,FLOAT OffsetY,FLOAT OffsetZ);
+
+旋转矩阵:
+		当绕 X 轴旋转时，其角度的正弦和余弦值放入矩阵的位置如下所示： 
+		float rotateXMatrix[4][4] = { 
+																1.0f,  0.0f,  0.0f,  0.0f, 
+																0.0f,  cosAngle,  sinAngle,  0.0f, 
+																0.0f,  -sinAngle, cosAngle,  0.0f, 
+																0.0f,  0.0f,  0.0f,  1.0f 
+																};  
+
+		绕 Y 轴旋转所要求的角度正弦和余弦值在矩阵中的位置与之前的不同。这种情况下，绕 Y 轴旋转角度的正弦和 余弦值影响 X 和 Z 轴方向的值，其旋转的矩阵如下： 
+		float rotateYMatrix[4][4] = { 
+																cosAngle,   0.0f,  -sinAngle,  0.0f, 
+																0.0f,   1.0f,  0.0f,   0.0f, 
+																sinAngle,   0.0f,  cosAngle,   0.0f, 
+																0.0f,   0.0f,  0.0f,   1.0f 
+																};  
+
+		最后一个旋转矩阵是绕 Z 轴旋转的变换矩阵。这种情况下，角度的正弦和余弦值影响 X 和 Y 轴方向，其绕 Z 轴 旋转的矩阵如下：
+		 float rotateZMatrix[4][4] = { 
+																 cosAngle,   sinAngle,   0.0f,  0.0f, 
+																 -sinAngle,  cosAngle,   0.0f,  0.0f, 
+																 0.0f,   0.0f,   1.0f,  0.0f, 
+																 0.0f,   0.0f,   0.0f,  1.0f 
+																 };  
+
+		 在 XNA 数学中，我们有一些操作用于创建一个旋转矩阵。
+		 我们可以绕单一的坐标轴旋转，正如我们讨论过的创 建这三个不同的旋转矩阵，可以使用下列函数来完成： 
+		 XMMATRIX XMMatrixRotationX( FLOAT Angle ); 
+		 XMMATRIX XMMatrixRotationY( FLOAT Angle ); 
+		 XMMATRIX XMMatrixRotationZ( FLOAT Angle ); 
+
+矩阵的结合(Matrix Concatenation):
+	XMMATRIX finalMatrix = rotationMatrix * translationMatrix;
+变换矩阵的顺序:
+			scaling X rotation X translation.
+矩阵相乘:
+	XMMATRIX XMMatrixMultiply(XMMATRIX M1,XMMATRIX M2);
+
+
+Chapter-7 Shaders And Effects
+	计算着色器：用于从图形到物理，视频编码和解码，等这些方面。
+	效果文件(Effect Files):
+	Effect文件布局(Effect File Layout):包含外部变量，输入结构，着色器，技术块。
+	该最简单的效果文件的文本内容如下：
+	 struct VS_OUTPUT 
+	 { 
+		float4 Pos : SV_POSITION; 
+		float4 Color : COLOR0; 
+	 }; 
+ 
+	VS_OUTPUT VS( float4 Pos : POSITION ) 
+	{ 
+		VS_OUTPUT psInput; 
+		psInput.Pos = Pos; 
+		psInput.Color = float4( 1.0f, 1.0f, 0.0f, 1.0f ); 
+		return psInput; 
+	} 
+ 
+	float4 PS( VS_OUTPUT psInput ) : SV_Target 
+	{ 
+		return psInput.Color; 
+	} 
+ 
+	technique11 Render 
+	{ 
+		pass P0 
+		{ 
+			SetVertexShader( CompileShader( vs_4_0, VS( ) ) ); 
+			SetGeometryShader( NULL ); 
+			SetPixelShader( CompileShader( ps_4_0, PS( ) ) ); 
+		} 
+	} 
+ 载入一个效果文件（Loading an Effect File)
+	从一段缓存中载入：D3DX11CreateEffectFromMemory,因此需要使用std::ifstream读取Effect文件。
+	HRESULT D3DX11CreateEffectFromMemory(
+		void* pData,
+		SIZE_T DataLength,
+		UINT	FXFlags,
+		ID3D11Device* pDevice,
+		ID3DX11Effect* ppEffect);
+
+外部变量和常量缓存（External Variables and Constant Buffers)
+	所有的外部变量都属于常量缓存。常量缓存用于程序调用的组合变量，使得可以优化对他们的访问。常量缓存类似于结构的定义，使用cbuffer关键字来创建。
+	cbuffer Variables
+	{
+		matrix Projection；
+	}；
+	怎样将外部变量"Projection"绑定到程序中的ID3DX11EffectMatrixVariable；
+	ID3DX11EffectMatrixVariable* projectMatrixVar = 0;
+
+	projectMatrixVar = pEffect->GetVariableByName("Projection")->AsMatrix();
+	projectMatrixVar->SetMatrix((float*)&finalMatrix);
+
+输入结构和输出结构（Input and Output Structures )
+技术块(Technique Blocks)
+	technique11 Render
+	{
+		//technique definition
+		pass P0
+		{
+			SetVertexShader( CompileShader( vs_4_0, VS( ) ) ); 
+			SetGeometryShader( NULL ); 
+			SetPixelShader( CompileShader( ps_4_0, PS( ) ) ); 
+		}
+
+		pass P1
+		{
+		
+		}
+	}
+	在程序中访问技术:
+	ID3DX11EffectTechnique* shadowTech;
+	shadowTech = effect->GetTechniqueByName("ShadowMap");
+	在程序中渲染绘制：
+	D3DX11_TECHNIQUE_DESC techDesc;
+	ShadowTech->GetDesc(&techDesc);
+	for(UINT p = 0; p < techDesc.Passes ; p++)
+	{
+		ShadowTech->GetPassByIndex(p)->Apply(0,d3dContext
+		d3dContext_->DrawIndexed( 36, 0, 0 ); 
+	}
+
+	光栅化状态(Rasterizer States)
+		这种方式可以让你看到物体是怎样制作的， 这种方式可以比作观察一栋房子的框架，而不是局限于墙的形式。  
+		光栅化状态对象从ID3DRasterizerState接口继承而来，通过调用函数CreateRasterizerState来创建。
+		HRESUT CreateRasterizerState(
+			const D3D11_RASTERIZER_DESC* pRasterizerDesc,
+			ID3D11RasterizerState** ppRasterizerState);
+几何着色器:
+光照介绍(Introduction to Lighting)
+	环境光(ambient):
+	散射光(diffuse)：
+		光照颜色仅仅是表现纯光照强度：
+			float diffuse = clamp( dot( normal, lightVec ), 0.0, 1.0 ); 
+			float4 diffuseLight = lightColor * diffuse;
+		物体表面的颜色仅仅是来自于一个颜色贴图：
+			float diffuse = clamp( dot( normal, lightVec ), 0.0, 1.0 ); 
+			float4 diffuseLight = lightColor * diffuse; 
+			float4 finalColor = textureColor * diffuseLight; 
+	镜面光(specular)：
+		散射光照独立于观察视角，而镜面光照则依赖于观察视角。这意味 着表现镜面光照的方程将使用照相机向量来代替散射光照中的光照方向向量。照相机方向向量可以如下计算
+			float4 cameraVec = cameraPosition – vertexPosition; 
+		从照相机方向向量中，我们可以创建之前提到过的 half vector。可以使用如下方程计算镜面光照的影响： 
+			float3 halfVec = normalize( lightVec + cameraVec ); 
+			float specularTerm = pow( saturate( dot( normal, halfVec ) ), 25 ); 
+
+
+Chapter_8 Direct3D中的照相机和模型
+	Direct3D中的照相机，游戏中我们创建一个视图矩阵来代表虚拟的照相机。
+	XMMATRIX XMMatrixLookAtLH(
+		XMVECTOR EyePosition,
+		XMVECTOR FocusPosition,
+		XMVECTOR UpDirection
+		);
