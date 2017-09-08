@@ -1,0 +1,15 @@
+1:字节对齐的方式：
+	typedef size_t          UPInt;
+
+	enum
+	{
+		AlignSize = 16,
+		AlignMash = AlighSize - 1
+	};
+
+	inline UPInt roundUpSize(UPInt size)
+    { 
+		return (size + AlignMask) & ~(UPInt)AlignMask; 
+	}
+	分析，只要保证每次分配的大小都是16的整数倍，则可以保证每次分配的地址是16字节。
+	 malloc(size)，最后使用malloc分配size字节的空间大小。所以这样以后每次分配的空间大小都是16字节的整数倍。
