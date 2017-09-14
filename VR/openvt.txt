@@ -1,0 +1,9 @@
+1：关于VR畸变的一些知识积累：
+	http://1503c8fb.wiz03.com/share/s/0l0YzX1SH4om2LW6_-2h9BlL2W7pMZ1PgQgB2jFHe638SsvC
+2：值得一看的个人博客
+	http://blog.csdn.net/dabenxiong666/article/details/77720480
+3：ShaderToy
+	ShaderToy是一个计算机图形方面的在线的学习,交流平台.在这个平台上使用GLSL语言(语法跟C很像,如果你学习过C语言,操作它基本没什么问题)就能画出很漂亮的渲染效果.你可以在官网上看到人分享的链接(包含源码). 
+	这里分享两个ShaderToy上调试可能需要的链接:
+	1):GLSL4.5的语法规范
+	2):ShaderToy使用教程
