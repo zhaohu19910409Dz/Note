@@ -5,5 +5,46 @@
 3：ShaderToy
 	ShaderToy是一个计算机图形方面的在线的学习,交流平台.在这个平台上使用GLSL语言(语法跟C很像,如果你学习过C语言,操作它基本没什么问题)就能画出很漂亮的渲染效果.你可以在官网上看到人分享的链接(包含源码). 
 	这里分享两个ShaderToy上调试可能需要的链接:
-	1):GLSL4.5的语法规范
+	1):GLSL4.5的语法规范https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.4.50.pdf
 	2):ShaderToy使用教程
+	https://gamedevelopment.tutsplus.com/tutorials/a-beginners-guide-to-coding-graphics-shaders--cms-23313
+
+	
+	
+	shader:
+		Gradient:
+ 
+		void mainImage( out vec4 fragColor, in vec2 fragCoord )
+		{
+			vec2 xy = fragCoord.xy; //We obtain our coordinates for the current pixel
+			xy.x = xy.x / iResolution.x; //We divide the coordinates by the screen size
+			xy.y = xy.y / iResolution.y;
+			// Now x is 0 for the leftmost pixel, and 1 for the rightmost pixel
+			vec4 solidRed = vec4(0,0.0,0.0,1.0); //This is actually black right now
+			 solidRed.r = xy.x; //Set its red component to the normalized x value
+			fragColor = solidRed;
+		}
+		
+		Drawing Images:
+		
+		void mainImage( out vec4 fragColor, in vec2 fragCoord )
+		{
+			vec2 xy = fragCoord.xy / iResolution.xy;//Condensing this into one line
+			vec4 texColor = texture(iChannel0,xy);//Get the pixel at xy from iChannel0
+			fragColor = texColor;//Set the screen pixel to that color
+		}
+		
+		Adding Some Movement:
+		
+		void mainImage( out vec4 fragColor, in vec2 fragCoord )
+		{
+			vec2 xy = fragCoord.xy / iResolution.xy; // Condensing this into one line
+			vec4 texColor = texture(iChannel0,xy); // Get the pixel at xy from iChannel0
+			   texColor.r *= abs(sin(iGlobalTime));
+			texColor.g *= abs(cos(iGlobalTime));
+			texColor.b *= abs(sin(iGlobalTime) * cos(iGlobalTime));
+			fragColor = texColor; // Set the screen pixel to that color
+		}
+
+
+ 
