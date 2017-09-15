@@ -1,0 +1,28 @@
+3.1 基础图形管线
+		三种向OpenGl着色器传递渲染数据的方法：属性，Uniform和纹理.
+3.2 创建坐标系
+		3.2.1 正投影
+				GLFrustum::SetOrthographic(……)；
+		3.2.2 透视投影
+				GLFrustum::SetPerspective(float fFov, float fAspect, float fNear, float fFar);
+3.3 使用存储着色器
+		GLShaderManager 在使用前必须进行初始化
+		shaderManager.InitializeStockShaders();
+		3.3.1 属性
+			GLShaderManager预定义的标识符
+			GLT_ATTRIBUTE_VERTEX			3分量(x, y, z)顶点位置
+			GLT_ATTRIBUTE_COLOR
+			GLT_ATTRIBUTE_NORMAL
+			GLT_ATTRIBUTE_TEXTURE0
+			GLT_ATTRIBUTE_TEXTURE1
+		3.3.2 Uniform值
+			单位(Identity)着色器：
+			平面作色器:
+			上色（Shaded)着色器:
+			默认光源着色器:
+			点光源着色器:
+			纹理替换矩阵:
+			纹理调整着色器:
+			纹理光源着色器:
+3.4 将点连接起来
+		3.4.1 点和线
