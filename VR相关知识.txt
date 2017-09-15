@@ -1,0 +1,8 @@
+Interpipillary distance(IPD):人类平均值为64，但是值的区间在54——72也是可能的
+Field of view(FOV):这个是根据人眼的距离和显示的大小决定的
+Aspect ration:宽高比（0.8）
+Multisampling:
+
+gyroscope:				陀螺仪
+accelerometer:		加速度
+magnetometer:	磁强计

@@ -1,0 +1,172 @@
+opengl:
+	图形硬件的一种软件接口；最大的优点：它的速度快于光线追踪器或软件渲染引擎。
+
+	GLUT：
+		AUX是OpenGL辅助函数库。
+	数据类型：
+		GLboolean	位宽:1
+		GLbyte			8
+		GLubyte		8
+		GLuchar		8
+		GLshort		16
+		GLushort		16
+		GLhalf			16	半精度浮点数
+		GLint				32
+		GLuint			32
+		GLsizei			32	无符号32位整数
+		GLenum		32	无符号32位整数
+		GLfloat			32	32位浮点数
+		GLclampf		32	[0,1]范围内的32位浮点数
+		GLbitfield	32	32位
+		GLdouble	64	64位双精度数
+		GLclampd	64	[0,1]范围内的64位双精度数
+		GLint64			64	有符号64位整数
+		GLuint64		64	无符号64位整数
+		GLsizeptr		本地指针大小		无符号整数
+		GLintptr		本地指针大小		有符号整数
+		GLsync			本地指针大小		同步对象句柄
+
+		eg:申明10个GLshort变量数组:
+			GLshort shorts[10];
+			GLdouble *doubles
+
+		2.2.3  OpenGL错误
+					Glenum glGetError(void);
+		2.2.4 确认版本
+					GL函数库可以通过调用glGetString来返回与他们的版本号和生产商有关的特定信息.
+					const GLubyte *glGetString(GLenum name);
+		2.2.5 使用glHint获取线索
+					void glHint(GLenum target,GLenum mode);
+		2.2.6 OpenGL状态机
+					void glEnable (GLenum capability);
+					void glDisable(GLenum capability);
+
+					eg:以深度测试为例
+							glEnable(GL_DEPTH_TEST);
+							glDisable(GL_DEPTH_TEST);
+
+					如果希望对一个状态变量进行测试，以判断他是否已经被打开，opengl还提了一种方便的机制:
+					Glboolean glIsEnabled(GLenum capability);
+
+
+		2.5.1  要包含什么
+				#include <GLTools.h>								//OpenGL toolkit
+				#include <GLShaderManager.h>		//shader Manager Class
+				 #ifdef _APPLE_
+					#include <gl/glut.h>
+				#else
+					#define FREEGLUT_STATIC
+					#include <GL/glut.h>
+				#endif
+
+
+		2.5.2 启动GLUT
+
+				int main(int argc,char* argv[])
+				{
+
+				glSetWorkingDirectory(argv[0]);
+
+				//初始化GLUT
+				glutInit(&argc,argv);
+
+				//告诉GLUT，在创建窗口时使用哪种类型的显示模式
+				glutInitDisplayMode(GLUT_DOUBLE	|	GLUT_RGBA	|	GLUT_DEPTH	|	GLUT_STENCIL);
+							GLUT_DOUBLE:	使用双缓冲窗口
+							GLUT_RGBA:			RGBA颜色模式
+							GLUT_DEPTH:		将一个深度缓冲区分配为显示的一部分
+							GLUT_STENCIL:	确认我们有一个可用的模板缓存
+					
+					//设置窗口大小和标题
+					glutInitWindowSize(800,600);
+					glutCreateWindow("Triangle");
+
+					//设置消息处理的回调函数
+					glutReshapeFunc(ChangeSize);
+					glutDisplayFunc(RenderScene);
+
+					//初始化GLEW库
+					GLenum err = glewInit();
+					if(GLEW_OK != err)
+					{
+						fprintf(stderr,"GLEW Error:%s\n",glewGetErrorString(err));
+						return 1;
+					}
+
+					//调用SetupRC
+					SetupRC();
+
+					//开始主消息循环
+					glutMainLoop();
+					return 0;
+					}
+
+
+		2.5.3 坐标系基础
+					void ChangeSize(int w , int h)
+					{
+						glViewport(0,	0,	w,	h);
+					}
+
+		2.5.4 完成设置
+					glClearColor(0.0f,		0.0f,	1.0f	,	1.0f);
+
+					存储作色器:
+					GLShaderManager shaderManager;
+					shaderManager.InitializeStockShaders();
+					指定顶点:
+					//Load up a triangle
+					Glfloat vVerts[] = { -0.5f,  0.0f,  0.0f,
+														0.5f,  0.0f,  0.0f,
+														0.0f,  0.5f,  0.0f  };
+
+					GLBatch  triangleBatch;
+					triangleBatch.Begin(GL_TRIANGLES, 3);
+					triangleBatch.CopyVertexData3f(vVerts);
+					triangleBatch.End();
+
+					GLfloat vRed[] = { 1.0f, 0.0f, 0.0f, 1.0f};
+					shaderManager.UseStockShader(GLT_SHADER_IDENTOTY,vRed);
+					triangleBatch.Draw();
+
+					glutSwapBuffers();
+
+		2.6.1 特殊按键
+					GLUT还提供了另一个回调函数即glutSpecialFunc.它注册了一个能够在按一个特殊按键时候被调用的函数(上下左右，page up\down键等);
+					glutSpecialFunc(SpecialKeys);
+
+					squareBatch.CopyVertexData3f(vVerts);
+					//用箭头键操正方形在屏幕范围内移动
+					void SpecialKeys(int key, int x, int y)
+					{
+						GLfloat stepSize = 0.025f;
+
+						GLfloat blockX = vVerts[0];
+						GLfloat blockY = vVerts[7];
+
+						if(key == GLUT_KEY_UP)
+							blockY += stepSize;
+
+							……………………
+							……………………
+
+							glutPostRedisplay();
+					}
+
+		2.6.2 刷新显示
+					glutPostRedisplay();
+
+		2.6.3 简单的动画片
+					void RenderScene(void)
+					{
+						glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+						GLfloat vRed[] = { 1.0f, 0.0f, 0.0f, 1.0f};
+						shaderManager.UseStickShader(GLT_SHADER_IDENTITY,vRed);
+						squareBatch.Draw();
+
+						glutSwapBuffers();
+
+						BounceFunction()；
+						glutPostRedisplay();
+					}
