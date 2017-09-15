@@ -4,3 +4,13 @@ https://github.com/zhaohu19910409Dz/Note.git
 2：git add .
 3：git commit -m "mark"
 4：git push https://github.com/zhaohu19910409Dz/Note.git
+
+
+(二):本地有更新，上传到GitHub仓库:
+	1:		git init
+	2:		git add .
+	3:		git commit -m "commit"
+	4:		git remote add origin https://github.com/zhaohu19910409Dz/Note.git
+	5:		git pull --rebase origin master
+	6:		git push -u origin master
+	7:		git status
