@@ -1,0 +1,7 @@
+Timer::InitializeTimerSystem();
+	
+//处理时间计算
+	………………………………
+	
+
+Timer::ShutdownTimerSystem();
