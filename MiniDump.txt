@@ -1,0 +1,82 @@
+
+//生成Dump文件信息 OS：Windows
+#pragma once
+
+#include <windows.h>
+#include <imagehlp.h>
+#if (_MSC_VER < 1700) // vs2010 and before version
+#include <stdlib.h>
+#else
+#include <tchar.h>
+#endif
+#include <ctime>
+#include <cstdio>
+
+#pragma comment(lib, "dbghelp.lib")
+
+
+class MiniDump
+{
+public:
+	MiniDump() = delete;
+	~MiniDump() = delete;
+
+	static LONG WINAPI RunUnhandledFilter(struct _EXCEPTION_POINTERS *lpExceptionInfo)
+	{
+		LONG ret = EXCEPTION_EXECUTE_HANDLER;
+		TCHAR szFileName[64];
+		SYSTEMTIME st;
+		::GetLocalTime(&st);
+		std::srand(static_cast<unsigned int>(std::time(0)));
+#if defined(UNICODE)
+		swprintf_s(szFileName, L"%d-%d-%d-%d-%d-%d-%d-%d.dmp", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds, std::rand());
+#else
+		sprintf_s(szFileName, "%d-%d-%d-%d-%d-%d-%d-%d.dmp", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds, std::rand());
+#endif
+
+		HANDLE hFile = ::CreateFile(szFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+		if (hFile != INVALID_HANDLE_VALUE)
+		{
+			MINIDUMP_EXCEPTION_INFORMATION ExInfo;
+			ExInfo.ThreadId = ::GetCurrentThreadId();
+			ExInfo.ExceptionPointers = lpExceptionInfo;
+			ExInfo.ClientPointers = false;
+
+			// write the dump
+#if !defined(FINALIDEALSEE)
+			BOOL bOK = MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile, MiniDumpWithFullMemory, &ExInfo, NULL, NULL);
+#else
+			BOOL bOK = MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile, MiniDumpNormal, &ExInfo, NULL, NULL);
+#endif
+			if (bOK)
+			{
+				printf("Create Dump File Success!\n");
+			}
+			else
+			{
+				printf("MiniDumpWriteDump Failed: %d\n", GetLastError());
+			}
+
+			::CloseHandle(hFile);
+		}
+		else
+		{
+#if defined(UNICODE)
+			wprintf(L"Create File %ls Failed %d\n", szFileName, GetLastError());
+#else
+			printf("Create File %s Failed %d\n", szFileName, GetLastError());
+#endif
+		}
+		//禁用对话框提示信息//
+		//FatalAppExit(-1, _T("Fatal Error, Check Dump File"));
+
+		return ret;
+	}
+
+	static void InitMinDump()
+	{
+		SetUnhandledExceptionFilter(RunUnhandledFilter);
+	}
+};
+

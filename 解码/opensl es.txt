@@ -1,0 +1,99 @@
+1:NDK 开发OpenSL ES跨平台高效的解决方案：
+	I:主要结构
+		(1):	Object对象
+		(2):	Interface接口
+	II:流程
+		(1):	打开文件
+		(2): 创建OpenSL ES引擎
+		(3):	获取引擎接口
+		(4):	创建输出混音器
+		(5):	创建缓冲区保存读取到的音频数据
+		(6):	创建带有缓冲区队列的音频播放器
+		(7):	获得缓冲区队列接口
+		(8):	注册音频播放器回调函数
+		(9):	SetPlayState启动播放器
+		(10):	让第一个缓冲区入队
+
+
+		Example:
+
+		//用到的变量和结构体
+		WAV wav; 
+		SLObjectItf		engineObject; //引擎对象
+		SLEngineItf		engineInterface;	//引擎接口
+		SLObjectItf		outputMixObject;	//混音器
+		SLObjectItf		audipPlayerObject;		//播放器对象
+		SLAndroudSimpleBufferQueueItf androidPlayerBufferQueueItf;	//	缓冲区队列接口
+		SLPlayItf			audioPlayInterface;		//播放接口
+
+		unsigned char *buffer;	//缓冲区
+		size_t		bufferSize;			//缓冲区大小
+
+		//上下文
+		struct PlayerContext{
+			WAV wav;
+			unsigned char *buffer;
+			size_t		bufferSize;
+
+			PlayerContext(WAV wav,unsigned char *buffer, size_t bufferSize)
+			{
+				this->wav = wav;
+				this->buffer = buffer;
+				this->bufferSize = bufferSize;
+			}
+		};
+
+		//实现对象
+		void RealizeObject(SLObjectItf object)
+		{
+			(*object)->Realize(object,SL_BOOLEAN_FALSE);
+		}
+		
+
+
+		/*具体实现流程*/
+
+		1.打开文件
+		WAV wav = OpenWaveFile(env,jFileName);
+		WAV OpenWaveFile(JNIEnv *env,jstring jFileName)
+		{
+			const char *cFileName = env->GetStringUTFChars(jFileName,JNI_FALSE);
+			WAVError err;
+			WAV wav = wav_open(cFileName,WAV_READ,&err);
+
+			LOGI("%d",wav_get_bitrate(wav));
+			env->ReleaseStringUTFChars(jFileName,cFileName);
+			if(wav == 0)
+			{
+				LOGE("%s",wav_strerror(err));
+			}
+			return wav;
+		}
+
+
+		2:创建OpenSL ES引擎
+			//OpenSL ES在Android平台下默认是线程安全的，这样设置是为了兼容其他的平台
+			SLEngineOption options[] = {
+				{ (SLuint32)SL_ENGINEOPTION_THREADSAFE,(SLuint32)SL_BOOLEAN_TRUE}
+			};
+			slCreateEngine(&engineObject,ARRAY_LEN(enginObject),options,0,0,0);
+			//实例化对象
+			//对象创建之后，任然处于为实例化的状态，对象虽然存在但是未分配任何资源，使用前先实例化
+			RealizeObject(engineObject);
+
+			3:获取引擎接口
+			(*enginObject)->GetInterface(engineObject,SL_IID_ENGINE,&engineInterface);
+
+			4:创建输出混音器
+			(*engineInterface)->CreateOutputMix(engineInterface,&outputMixObject,0,0);
+			//实例化混音器
+			RealizeObject(outputMixObject);
+
+			5:创建缓存区保存到音频数据库
+			//缓存区大小
+			bufferSize = wav_get_channels(wav) * wav_get_rate(wav) * wav_get_bits(wav);
+			buffer = new unsigned char[bufferSize];
+
+			6:创建带缓冲区队里的音频播放器
+			CreateBufferQueueAudioPlayer(wav,engineInterface,outputMixObject,audioPlayerObject);
+			RealizeObject(audioPlayerObject);
