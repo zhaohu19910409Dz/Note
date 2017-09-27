@@ -1,0 +1,63 @@
+1:TArray
+	TArray IntArray;
+	1):TArray::Init
+		void Init(const ElementType & Element, int32 Number);
+		eg:
+			 IntArray.Init(10,5); // IntArray == [10, 10, 10, 10, 10]
+	2):TArray::Add
+		int32 Add( const ElementType & Item)
+	3):TArray::Emplace
+		templateint32 Emplace(ArgsType &&... Args)
+		eg:
+			TArray StrArr;
+			StrArr.Add(TEXT("Hello"));
+			StrArr.Emplace(TEXT("World")); // StrArr == ["Hello" , "World"]
+		注意:虽然Add和Emplace都是添加新元素到动态数组末尾，不过他们的内部实现是不同的：
+		>Add会复制元素到数组容器里面
+		>Emplace使用你给的参数来构造一个新的元素类型实例
+	4):TArray::Push
+		void Push( const ElementType & Item)
+		void Push( ElementType && Item)
+	2:迭代动态数组
+		通常迭代都至少有两种方式，一种是使用索引，一种是使用迭代器。
+		TArray array;
+		array.Push(1);
+		array.Push(3);
+		array.Push(7);
+		for(itn index = 0 ; index  < array.Num(); index++)
+		{
+			array[index];
+		}
+
+		for(TArray<int>::TIterator it = array.CreateIterator(); it ; ++it)
+		{
+			(*it);
+		}
+2:TSet
+	表示一组互不重复的数据元素
+	TSet::Add()
+	TSet::Emplace()
+	注意，集合的内部是二叉树，不能简单的按编号来访问
+	//set[0] = 4 ; //非法操作
+	void Append()
+	
+	迭代器：
+	for(TSet::TIterator it = set.CreateIterator(); it ; ++it)
+	{}
+
+	集合操作
+	1）：交集
+	TSet Intersect(const TSet & OtherSet)
+	2)：并集
+	TSet Union(cosnt TSet & otherSet);
+
+3:TMap
+	TMap charaPrice;
+	charaPrice.Add("hero",6300);
+	charaPrice.Add("hero1",6300);
+
+	for(TMap<FString,int>::TIterator it = charaPrice.CreateITerator();it;++it)
+	{
+		GEngine->AddOnScreenDebugMessage(-1,30.0f,FColor::White,
+		it->Key + FString("的出售价格：") + FString::FromInt(it->Value);
+	}

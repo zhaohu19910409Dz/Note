@@ -1,0 +1,152 @@
+1：使用VS编译UE4编辑器并添加物体到场景中……
+	(1):打开UE4
+	(2):新建项目-> c++ -> 基础代码
+	(3):自动打开VS，项目路劲不要使用中文
+	(4):在VS中使用 Development Editor（开发编辑器)模式
+	(5):按Ctrl + F5 进行编译，然后就会运行UE4编辑器
+2：添加物体到场景中
+	(1): 在内容浏览器中选择StartContent文件夹，在选择Props子文件夹，将MaterialSphere拖放到场景中。
+	(2): R键
+	(3): F键
+
+(二):创建空白关卡并添加碰撞体
+	1：创建空白关卡（文件->新建关卡)Ctrl + N
+	2:选择Default
+	3:从StarterContent/Shapers中的Shape_plane拖动到场景中，然后StarterContent/Materials中选择Materials中选择M_Ground_Moss来改变材质
+	4:从StarterContent/Props中选择SM_Rock拖放到场景中取。通过R键来调节石头的大小
+	5:从StarterContent/Particles中选择P_Fire
+	6:放置点光源
+ 添加碰撞体:
+	1):点击场景中的岩石
+	2):在世界大纲中邮件该岩石，选择编辑。
+	3):然后打开一个网格编辑器。确保菜单栏的碰撞网格显示按钮已经开启
+	4):选择菜单的碰撞，然后选择“添加胶囊简化碰撞”来模拟岩石的碰撞
+	5):通用W E R来调整碰撞体的网格大小
+	6):点击右上角的保存
+
+（三):创建一个从Character类继承的类
+	1):在项目总打开你的UE4编辑器
+	2):在文件，选择“新建C++类”
+	3):这里你可以选择从Pawn类（Pawn类从控制器接收输入）继承或从Actor类继承。不够我们可以选择从Character类继承
+	4):点击继续，然后可以命名这个类。这里我们将其命名为Avatar。
+	5):最后点击创建类来使用代码创建这个类。
+（四）:为角色创建一个模型
+	现在我们Avatar是继承了角色类，但是还需要给角色赋予一个模型。我们可以从UE4的商场找一个免费的模型
+	1):点击工具栏的市场，进入UE4的商城
+	2):来类别中选择 角色&动画
+	3):找到一个名字叫Animation Starter Pack的免费资源包，点击进去。
+	4):点击免费按钮添加到库里面
+	5):下载完成后点击库,点击"添加到工程"
+	6):在新窗口中选择对应的工程，然后点击添加到项目。
+	7):现在我们可以找到刚刚添加的资源，在内容浏览器点击选择路径
+	8):选择StarterContent文件夹
+（5）:载入网格
+	通常情况下，如果使用C++代码来载入资源，这是一种硬编码的坏习惯。在运行程序的时候，如果资源发生了改变，则程序不会做出改变。更好的做法是，可以在运行时改变载入的资源。
+	下面我们从C++类中创建一个蓝图：
+	1):在菜单栏的窗口->开发者工具->类别查看器。
+	2):在类别查看器中，点击Avatar，选择创建蓝图类。（如果找不到Avatar，请重启UE4编辑器)
+	3):在蓝图类名称输出BP_Avatar,点击保存，然后会来到蓝图编辑器。
+	4):在左上角的组件中，选择Mesh
+	5):在右侧的细节面板中，在Mesh选择卡中，选择下拉按钮，点击视图选择,点击显示引擎内容，在选择TutorialTPP.
+	6):调整模型和碰撞体。
+	7):如果碰撞胶囊体不够大，可以点击组件CapsuleComponent，然后在细节面板的Shaper调节胶囊体的大下。
+	8):然后关闭窗口。从内容浏览器中将BP_Avatar拖放到场景中。
+（6）:添加动画
+	1):双击内容浏览器的BP_Avatar，重新打开蓝图编辑器。
+	2):在上方选择卡中点击视口,然后选择Mesh,在右侧的细节面板中的Animation选项中的Anima Blueprint Generated Class中选择UE4ASP_Hero_AnimBlueprint.
+
+(7）:添加摄像机
+	为了使得我们有一个第三人称视角，我们给该角色添加上摄像机以追随该角色。
+	1):在组件中进行如下设置
+		点击添加组件，选择Camera
+	2):移动摄像机并旋转角色（注意角色的蓝色箭头是角色的前进方向，所以要使得摄像机和角色自身的朝向都要面对着蓝色箭头)
+	3):点击工具栏的保存
+		现在角色还不能控制，需要使用C++代码来控制角色。
+
+(8):在UE4中编写C++代码控制角色
+	1:创建游戏模式类
+		1):点击文件->新建C++类。
+		2):选择Game Mode(游戏模式)
+		3):将其命名为"MyGameMode1"
+		4):点击创建类。
+	2:创建游戏模式的蓝图
+		UE4会自动启动VS开发环境，然后我们来创建MyGameMode1蓝图：
+		1):在工具栏上点击蓝图->游戏模式：Demo1GameMode -> 创建
+		2):填写蓝图名称，这里是"BP_GameMode1"，然后点好
+		3):从右侧的细节面板中的Default Pawn Class 的下拉选项中选择上次我们创建好的角色蓝图BP_Avatar
+		4):点击工具栏的保存，然后退出。
+	3:设置检测键盘输入
+		1):点击工具栏的设置，然后点击项目设置
+		2):接下来，在左侧面板的输入，然后在Axis Mappings(按键映射)后面点击加号……
+		3):关闭窗口自动保存
+	4:通过C++代码控制角色行走
+		void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+		void MoveForward(float amount);
+		void MoveBack(float amount);
+		void MoveLeft(float amount);
+		void MoveRight(float amount);
+		void Yaw(float amount);
+		void Pitch(float amount)
+
+		void AAvatar::SetupPlayerInputComponent(class UInputComponent* InputComponent)
+		{
+			check(InputComponent);
+			InputComponent->BindAxis("Forward", this, &AAvatar::MoveForward);
+			InputComponent->BindAxis("Back", this, &AAvatar::MoveBack);
+			InputComponent->BindAxis("Left", this, &AAvatar::MoveLeft);
+			InputComponent->BindAxis("Right", this, &AAvatar::MoveRight);
+			InputComponent->BindAxis("Yaw", this, &AAvatar::MoveRight);
+			InputComponent->BindAxis("Pitch", this, &AAvatar::MoveRight);
+		}
+
+		void AAvatar::MoveForward(float amount)
+		{
+			if (Controller && amount)
+			{
+				FVector fwd = GetActorForwardVector();
+				AddMovementInput(fwd, amount);
+			}
+		}
+
+		void AAvatar::MoveBack(float amount)
+		{
+			if (Controller && amount)
+			{
+				FVector fwd = -GetActorForwardVector();
+				AddMovementInput(fwd, amount);
+			}
+		}
+
+		void AAvatar::MoveLeft(float amount)
+		{
+			if (Controller && amount)
+			{
+				FVector fwd = -GetActorRightVector();
+				AddMovementInput(fwd, amount);
+			}
+		}
+
+		void AAvatar::MoveRight(float amount)
+		{
+			if (Controller && amount)
+			{
+				FVector fwd = GetActorRightVector();
+				AddMovementInput(fwd, amount);
+			}
+		}
+
+		void AAvatar::Yaw(float amount)
+		{
+			if (Controller && amount)
+			{
+				AddControllerYawInput(200.0f * amount  *  GetWord()->GetDeltaSeconds());
+			}
+		}
+
+		void AAvatar::Pitch(float amount)
+		{
+			if (Controller && amount)
+			{
+			}
+		}
+
