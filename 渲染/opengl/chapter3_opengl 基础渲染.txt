@@ -1,0 +1,165 @@
+3.1 基础图形管线
+		三种向OpenGl着色器传递渲染数据的方法：属性，Uniform和纹理.
+3.2 创建坐标系
+		3.2.1 正投影
+				GLFrustum::SetOrthographic(……)；
+		3.2.2 透视投影
+				GLFrustum::SetPerspective(float fFov, float fAspect, float fNear, float fFar);
+3.3 使用存储着色器
+		GLShaderManager 在使用前必须进行初始化
+		shaderManager.InitializeStockShaders();
+		3.3.1 属性
+			GLShaderManager预定义的标识符
+			GLT_ATTRIBUTE_VERTEX			3分量(x, y, z)顶点位置
+			GLT_ATTRIBUTE_COLOR
+			GLT_ATTRIBUTE_NORMAL
+			GLT_ATTRIBUTE_TEXTURE0
+			GLT_ATTRIBUTE_TEXTURE1
+		3.3.2 Uniform值
+			单位(Identity)着色器：
+			平面作色器:
+			上色（Shaded)着色器:
+			默认光源着色器:
+			点光源着色器:
+			纹理替换矩阵:
+			纹理调整着色器:
+			纹理光源着色器:
+3.4 将点连接起来
+		3.4.1 点和线
+			GL_POINTS
+			GL_LINES
+			GL_LINE_STRIP
+			GL_LINE_LOOP
+			GL_TRIANGLES
+			GL_TRIANGLE_STRIP
+			GL_TRIANGLE_FAN
+
+			点:
+				void glPointSize(GLfloat size); //默认大小为一个像素 
+
+				GLfloat size[2];
+				GLfloat step;
+
+				//获支持的点大小范围和步长
+				glGetFloatv(GL_POINT_SIZE_RANGE,size);
+				glGetGloatv(GL_POINT_SIZE_GRANULARITY,&step);
+
+			线:
+				void glLineWidth(GLfloat width); //默认宽度一个像素，改变线段宽度的唯一方式是使用该函数
+
+		3.4.2 绘制三角形
+			在默认情况下。OpenGL认为具有逆时针方向环绕的多边形是正面的。
+			glFrontFace(GL_CW);
+			GL_CW : 告诉openGL顺时针环绕多边形被认为是正面的，GL_CCW 可以恢复为逆时针
+
+		3.4.4 一个简单批次容器
+			GLTools库中包含一个简单的容器类，叫做GBatch.
+
+			//首先对批次进行初始化，告诉这个类代表那种图元，定点数，以及一组或者两组纹理坐标
+			void GLBatch::Begin(GLenum primitive, GLuint nVerts, GLuint nTextureUints = 0);
+			//然后 至少要辅助一个由3分量（x,y,z）定点组成的数组
+			void GLBatch::CopyVertexData3f(GLfloat *vVerts);
+			//我们还可以选择复制表面法线，颜色和纹理坐标
+
+			void GLBatch::CopyNormalDataf(GLfloat *vNorms);
+			void GLBatch::CopyColorData4f(GLfloat *vColors);
+			void GLBatch::CopyTexCoordData2f(GLfloat *vTexCoords, GLuint uiTextureLayer);
+
+			void GLBatch::End(void);
+
+				//example 
+				GLBatch triangleBatch;
+
+				//Load up a triangle
+				GLfloat vVerts[] = {-0.5f, 0.0f, 0.0f,
+									0.5f, 0.0f, 0.0f,
+									0.0f, 0.5f, 0.0f };
+				triangleBatch.Begin(GL_TRIANGLES,3);
+				triangleBatch.CopyVertexData3f(vVerts);
+				triangleBatch.End();
+
+				//Render
+				GLfloat vRed[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+				shaderManager.UseStockShader(GLT_SHADER_IDENTITY,vRed);
+				triangleBatch.Draw();
+
+			正面和背面剔除
+			glEnable(GL_CULL_FACE);
+			glDisable(GL_CULL_FACE);
+			注意：我们并没有指明剔除正面还是背面，这个是由glCullFace控制的。
+			void glCullFace(GLenum mode); 
+			// mode : GL_FRONT GL_BACK 或者 GL_FRONT_AND_BACK
+			
+			//example 消除不透明物体内部几何图形就需要两行代码
+			glCullFace(GL_BACK);
+			glEnable(GL_CULL_FACE_);
+
+			深度测试：
+			 是另外一种高效消除隐藏表面的技术，那么我们在使用GLUT设置OpenGL窗口的时候，应该请求一个深度缓冲。例如，我们可以按照如下方式申请一个颜色缓冲区和一个深度缓冲。
+			 glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
+			 //启用深度测试
+			 glEnable(GL_DEPTH_TEST);
+
+
+			多边形模式:
+				 void glPolygonMode(GLenum face, GLenum mode); //允许将多边形渲染成实体，轮廓或只有点
+				 face: GL_FRONT GL_BACK 或 GL_FRONT_AND_BACK
+				 mode: GL_FILL (default),GL_LINE, GL_POINT
+
+				 //example 将多边形正面和背面绘制为线框模式
+				 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				 
+		3.4.6 多边形偏移
+			void glPolygonOffset(GLfloat factor, GLfloat units);
+			应用到片段上的总偏移可以通过下面的方程式表示：
+			Depth Offset = (DZ x factor) + ( r x units);
+
+			……………………
+
+		3.4.7 裁剪
+			另外一种提高渲染性能的方式是只刷新屏幕上发生变化的部分。
+			
+			//开启裁剪测试
+			glEnable(GL_SCISSOR_TEST);
+			//close
+			glDisable(GL_SCISSOR_TEST);
+			
+			void glScissor(GLint x, GLint y, GLsizei width, GLsizei height); 
+			其中 x y 参数指定了裁剪框的左上角。
+
+		3.5 混合
+			glEnable(GL_BLEND);
+			
+			3.5.1 组合颜色
+				目标颜色: 已经存储在颜色缓冲区中的颜色值。
+				源颜色: 作为当前渲染命令的结果进入颜色缓冲区的颜色值
+				当混合功能被开启时，源颜色和目标颜色的组合方式是由混合方程式控制的。在默认情况下，混合方程是如下所示。
+					Cf = (Cs * S ) + ( Cd * D)
+				S 源混合因子
+				D 目标混合因子
+
+				glBlendFunc(GLenum S, GLenum D);
+
+			3.5.2 改变混合方程式
+
+			3.5.3 抗锯齿
+				
+				//开启抗锯齿功能非常简单。首先，我们必须启动混合功能，并且像前一节实现透明一样设置混合函数
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+
+				//我们还需要确保吧混合方程式设置为GL_ADD,不过由于这是默认的设置。所以我们就不在这里显示这个步骤了。在启用混合功能并且选择正确的混合函数以及混合方程式之后，我们可以调用
+					glEnable函数对点，直线或多边形（任何实心图元）进行抗锯齿处理。
+					
+				glEnable(GL_POINT_SMOOTH);
+				glEnable(GL_LINE_SMOOTH);
+				glEnable(GL_POLYGON_SMOOTH);
+
+			3.5.4 多重采样
+
+				例如,为了请求一个多重采样，完全颜色，带深度的双缓冲帧缓冲区，我们可以调用
+				glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH | GLUT_MULTISAMPLE);
+				可以使用glEnable/glDisable组合打开或关闭多重采样：
+				glEnable(GL_MULTISAMPLE);
+				或
+				glDisable(GL_MULTISAMPLE);

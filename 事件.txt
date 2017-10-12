@@ -1,0 +1,25 @@
+﻿事件对象就像一个开关：它只有两种状态（开和关).
+	开状态：我们称其为“有信号”
+	关状态:我们称其为“无信号”
+	可以在一个线程的执行函数中创建一个事件对象，然后观察它的状态，如果是“无信号”就让该线程睡眠，这样该线程占用的CPU时间就比较少。
+	HANDLE CreateEvent(
+		LPSECURITY_ATTRIBUTES lpEventAttributes,
+		BOOL	bManualReset,
+		BOOL	bInitialState,
+		BOOL	lpName);
+
+		lpEventAttributes:	一般为NULL
+		bManualReset:		true	则为人工复位，一旦Even被设置为有信号，则它一直会等到ResetEvent() API被调用是才会恢复为无信号
+							false	Event被设置为有信号，则当有一个wait到它的Thread时，该Event就会自动复位，变成无信号。如果想在每次调用
+									WaitForSingleObject后让Windows为你自动把Event的状态恢复为“无信号”，则必须把该参数设置为FALSE，否者你必须每次调用ResetEvent函数来清除事件标志。
+		bInitialState		初始状态,true,有信号,false无信号   
+   		lpName				事件对象的名称。您在OpenEvent函数中可能使用。
+
+
+
+Function:
+		OpenEvent()
+		CloseHandle()
+		SetEvent() / PulseEvent()
+		ResetEvent()
+		WaitForSingleObject() / WaitForMultipleObjects()

@@ -1,0 +1,163 @@
+Chapter5 基础纹理
+
+	Contents：
+	===============================================================================
+	|	任务				|		使用的函数
+	===============================================================================
+	|	载入纹理图像		|		glTexImage / glTexSubImage
+	===============================================================================
+	|	设置纹理贴图参数	|		glTexParameter
+	===============================================================================
+	|	管理多重纹理		|		glGenTextures / glDeleteTextures / glBindTexture
+	===============================================================================
+	|	生成Mip贴图		|		glGenerateMipmap
+	===============================================================================
+	|	使用各向异性过滤	|		glGetFloatv / glTexParameter
+	===============================================================================
+	|	载入压缩纹理		|		glCompressedTexImage / glCompressedTexSubImage
+	===============================================================================
+
+	5.1.1 像素包装
+		在默认情况下，OpenGL采用4个字节的对齐方式。
+		我们在向OpenGL提交图像数据或从OpenGL获取图像数据时，OpenGL需要知道我们想要在内存中对数据进行怎样的包装或解包装操作。
+
+		我们可以使用下列函数改变或者回复像素的存储方式。
+		void glPixelStorei(GLenum pname, GLint param);
+		void glPixelStoref(GLenum pname, GLfloat param);
+
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1); 其中GL_UNPACK_ALIGNMENT指定OpenGL如何从数据缓存区中解包图像数据。
+
+		GL_PACK_ALIGNMENT : 告诉OpenGL如何将从像素缓冲区中读取并放置到一个用户指定的内存缓冲区的数据进行包装.
+
+	5.1.2 像素图
+		void glReadPixels(GLint x, GLint y ,GLSizei width, GLSizei height, GLenum format, GLenum type, const void *pixels);
+
+	5.1.3 包装的像素格式
+		默认情况下，对于GLReadPixels函数来说，读取操作在双缓冲区渲染环境下将在后台缓存区进行，而在单缓存区渲染环境下则在前台缓存区进行。我们可以使用下面函数改变这些像素操作的源。
+		void glReadBuffer(GLenum mode);
+		mode : GL_FRONT GL_BACK GL_LEFT GL_RIGHT GL_FRONT_LEFT GL_FRONT_RIGHT GL_BACK_LEFT GL_BACK_RIGHT 或者 GL_NONE 
+
+	5.1.4 保存像素
+		GLTools库中的gltWirteTGA函数从前台颜色缓存区找那个读取颜色数据，并将这个数据存储到一个Targa文件格式的图形文件中。
+
+		GLint glWriteRGA(const char *szFileName)
+		{
+			FILE		*pFile;
+			TGAHEADER	tgaHeader;
+			unsigned long lImageSize;
+			GLbyte		*pBits = NULL;
+			GLint		iViewport[4];
+			GLenum		lastBuffer;
+
+			//get viewport size
+			glGetIntegerv(GL_VIEWPORT, iViewport);
+
+			lImageSize = iViewport[2] * 3 * iViewport[3];
+
+			//alloc block
+			pBits = (GLbyte*)malloc(lImageSize);
+			if(pBits == NULL)
+				return 0;
+
+			//read from color buffer
+			glPixelStorei(GL_PACK_ALIGMENT, 1);
+			glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+			glPixelStorei(GL_PACK_SKIP_ROWS, 0);
+			glPixekStorei(GL_PACK_SKIP_PIXELS, 0);
+
+			//获取当前读取缓冲区设置并进行保存
+			//切换到前台缓冲区并进行读取操作，最后恢复读取缓存区状态
+			glGetIntegerv(GL_READ_BUFFER, &lastBuffer);
+			glReadBuffer(GL_FRONT);
+			glReadPixels(0, 0, iViewport[2], iViewport[3], GL_BRG, GL_UNSIGNED_BYTE, pBits);
+			glReadBuffer(lastBuffer);
+
+			//初始化Targa头
+			……………………………………
+			……………………………………
+
+			//open file
+			pFile = fopen(szFileName, "wb");
+			if(pFile == NULL)
+			{
+				free(pBits);
+				return 0;
+			}
+
+			fwrite(&tgaHeader, sizeof(TGAHEADER), 1, pFile);
+			fwirte(pBites, lImageSize, 1, pFile);
+
+			free(pBits);
+			fclose((pFile);
+
+			return 1;
+		}
+
+	5.1.5 读取像素
+		从磁盘中载入Targa文件的函数
+		GLbyte *gltReadRGABits（const char* szFileName, GLint *iWidth, GLint *iHeght, GLint *iComponents, GLenum *eFormat);
+
+5.2 载入纹理
+	void glTexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border,GLenum format,GLenum type, void *data);
+	void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border,GLenum format,GLenum type, void *data);
+	void glTexImage3D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border,GLenum format,GLenum type, void *data);
+	【param】
+	target : GL_TEXTURE_1D,GL_TEXTURE_2D,GL_TEXTURE_3D我们也可以指定代理GL_PROXY_TEXTURE_1D，……并使用glGetTexParameter函数提取代理查询的结果
+	level：		mip贴图层次
+	
+	5.2.1 使用颜色缓冲区
+
+		一维和二维纹理也可以从颜色缓冲区加载数据。
+		void glCopyTexImage1D(GLenum target, GLint level, GLenum internalformat,GLint x, GLint y, GLsizei width, GLint border);
+		void glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat,GLint x, GLint y, GLsizei width, GLint border);
+		void glCopyTexImage3D(GLenum target, GLint level, GLenum internalformat,GLint x, GLint y, GLsizei width, GLint border);
+
+		从颜色缓冲区读取纹理，并插入或替换原来纹理的一部分。
+		void glCopyTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width);
+		…………………………
+		…………………………
+
+	5.2.2 纹理对象
+		void glGenTextures(GLsizei n, GLuint *textures);
+			n：			纹理对象数量
+			texutres:	纹理对象指针
+
+		绑定纹理状态:
+			void glBindTexure(GLenum target, GLuint texture);
+			target:		GL_TEXTURE_1D,GL_TEXTURE_2D或GL_TEXTURE_3D
+			texture:	需要绑定的特定纹理对象
+			此后，所有的纹理加载和纹理参数设置只影响当前绑定的纹理对象
+
+		删除纹理对象：
+			void glBindTexure(GLsizei n,GLuint *texture);
+
+		判断纹理对象（句柄）有效性：
+			GLboolean glIsTexture(GLuint texture);
+
+5.3 纹理应用
+
+	5.3.1 纹理坐标
+
+	5.3.2 纹理参数
+		很多参数的应用都会影响渲染的规则和纹理贴图的行为;
+		void glTexParameterf(GLenum target, GLenum pname, GLfloat param);
+		void glTexParameteri(GLenum target, GLenum pname, GLfloat param);
+		void glTexParameterfv(GLenum target, GLenum pname, GLfloat param);
+		void glTexParameteriv(GLenum target, GLenum pname, GLfloat param);
+	
+		基本过滤:
+			根据一个拉伸或收缩的纹理贴图计算颜色片段的过程称为纹理过滤(Texture Fililtering).使用OpenGL的纹理参数函数，可以同时设置放大和缩小过滤器。这两种过滤器的参数名分别是
+			GL_TEXTURE_MAG_FILTER 和 GL_TEXTURE_MIN_FILTER。
+			我们可以从两种基本的过滤器GL_NEAREST 和GL_LINEAR中进行选择。
+
+			使用最邻近过滤的一个列子。使用下面两个函数，为放大和缩小过滤器设置纹理过滤器
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+			线性过滤器：
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+		纹理环绕:
+			
+
