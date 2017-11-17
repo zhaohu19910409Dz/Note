@@ -159,5 +159,23 @@ Chapter5 基础纹理
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 		纹理环绕:
-			
+		
+	5.3.3 综合运用
+		
+			//load texure
+			GLuint texture1D;
+			glGenTextures(1, &texture1D);
+			glBindTexture(GL_TEXTURE_2D, texture1D);
+			LoadTGATexuture("stone.tga", GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE);
 
+
+5.4 Mip贴图、
+	Mip贴图是通过glTexImage函数加载的。
+	例如:我们想只加载第0层到第4层，可以像下面这样调用glTexParameteri函数两次:
+		glTexParamteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParamteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 4);
+
+	5.4.1 Mip贴图过滤
+
+	5.4.2 生产Mip层
+		

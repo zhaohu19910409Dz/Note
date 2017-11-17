@@ -1,0 +1,413 @@
+6 非存储着色器
+	6.1 初识OpenGL着色语言
+		我们至少两个作色器:一个是顶点着色器，一个片段着色器，还有一种可选的着色器称为几何着色器。
+		6.1.1 变量和数据类型
+			可用数据类型只有4种：整数（有符号和无符号），浮点数和布尔。
+
+			向量类型：
+				=============================================
+				+	类型				|		描述				+
+				+-------------------------------------------+
+				+ vec2,vec3,vec4	|	2,3,4分量浮点向量	+
+				+-------------------------------------------+
+				+ ivec2,ivec3,ivec4	|	2,3,4分量整数向量		+
+				+-------------------------------------------+
+				+ uvec2,uvec3,uvec4	|	2,3,4无符号整数向量	+
+				+-------------------------------------------+
+				+ bvec2,bvec3,bvec4	|	2,3,4分量布尔向量		+
+				=============================================
+
+			矩阵类型: 
+				所有矩阵都只支持浮点数
+
+				mat2,mat2x2
+
+		6.1.2 存储限定符 
+				<none>
+				const
+				in centroid
+				out
+				out centroid
+				intout
+				uniform			一个从客户端代码传递过来的变量，在顶点之间不做改变
+
+		6.1.3 真正的着色器
+			GLShaderManager类有一个存储着色器，叫做单位着色器 。这种着色器不会对几何图形进行转换，而是使用单一的颜色来绘制图元。
+				
+				//顶点着色器
+				#version 330
+				in vec4 vVertex;
+				in vec4 vColor;
+				out vec4 vVaryingColor;
+				void main(void)
+				{
+					vVaryingColor = vColor;
+					gl_Position = vVertex;
+				}
+
+				//片段着色器
+				#version 330
+				out vec4 vFragColor;
+				int vec4 vVaryingColor;
+				void main(void)
+				{
+					vFragColor = vVaryingColor;
+				}
+
+
+			 OpenGL着色语言版本:
+				#version 330
+
+			属性申明：
+				属性是有C/C++ 客户端OpenGL 代码逐个顶点进行指定。
+				GLSL中每个顶点程序都最多可以有16个属性。
+				同样，每个属性也总是一个4分量向量，即使不使用所有的4分量时也是如此。
+
+			声明输出：
+				当一个顶点着色器中将一个值声明为out，并在片段着色器中将其申明为in时，这个片段着色器接受的变量值为一个插补值。
+
+			顶点动作：
+				
+			片段三角形:
+				
+
+	6.1.4 编译，绑定和连接
+		GLTools函数gltLoadShaderPairWithAttributes对于加载和初始化着色器来说确实是真正的“重型升降机”
+
+		//gltLoadShaderPairWithAttributes函数
+		GLuint gltLoadShaderPairWithAttibute(const char *szVertexProg,const char *szFragmentProg,……)
+		{
+			//临时着色器对象
+			GLuint hVertexShader;
+			GLuint hFragmentShader;
+			GLuint hReturn = 0;
+			GLint testVal;
+			//创建着色器对象
+			hVertexShader = glCreateShader(GL_VERTEX_SHADER);
+			hFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+			//加载他们，如果失败则进行清除并返回NULL
+			//顶点程序
+			if(gltLoadShaderFile(szVertexProg, hVertexShader) == false)
+			{
+				glDeleteShader(hVertexShader);
+				glDeleteShader(hFragmentShader);
+				cout<<"The Shader at " szVertexProg <<"could not be found .\n";
+				return (GLuint)NULL;
+			}
+
+			//片段程序
+			if(gltLoadShaderFile(szFragmentProg, hFragmentShader) == false)
+			{
+				glDeleteShader(hVertexShader);
+				glDeleteShader(hFragmentShader);
+				cout<<"The Shader at "<<szFragmentProg<<"could not be found.\n";
+				return (GLuint)NULL;
+			}
+
+		//对两者进行编译
+		glCompileShader(hVertexShader);
+		glCompileShader(hFragmentShader);
+		
+		//在顶点着色器中检查错误
+		glGetShaderiv(hVertexShader, GL_COMPILE_STATUS, &testVal);
+		if(testVal == GL_FALSE)
+		{
+			char infoLog[1024];
+			glGetShaderInfoLog(hVertexShader, 1024, NULL, infoLog);
+			cout<<"The Shader at"<<szVertexProg<<"failed to compile with the following error;\n"<<infoLog<<"\n";
+			glDeleteShader(hVertexShader);
+			glDeleteShader(hFragmentShader);
+			return (GLuint)NULL;
+		}
+
+		//在片段着色器中检查错误
+		glGetShaderiv(hFragmentShader, GL_COMPILE_STATUS, &testVal)
+		{
+			……………………	
+		}
+
+		//创建最终的程序对象，并连接着色器
+		hReturn = glCreateProgram();
+		glAttachShader(hReturn, hVertexShader);
+		glAttachShader(hReturn, hFragmentShader);
+		//现在，我们需要将参数名绑定到他们指定的参数位置列表上
+		va_list attributeList;
+		va_start(attributeList, szFragmentProg);
+		//重复迭代这个参数列表
+		char *szNextArg;
+		int iArgCount = va_arg(attributeList,int);
+		for(int i = 0; i < iArgCount; i++)
+		{
+			int index = va_arg(attributeList, int);
+			szNextArg = va_arg(attributeList,char*);
+			glBindAttribLoaction(hReturn, index, szNextArg);
+		}
+		va_end(attributeList);
+		//尝试连接
+		glLinkProgram(hReturn);
+		//这些都不再需要了
+		glDeleteShader(hVertexShader);
+		glDeleteShader(hFragmentShader);
+		//确认连接有效
+		glGetProgramiv(hReturn, GL_LINK_STATUS, &testVal);
+		if(testVal == GL_FALSE)
+		{
+			
+		}
+		return hReturn;
+	}
+
+	指定属性:
+		GLuint gltLoadShaderPairWithAttributes(const char* szVertexProg,const char *szFragmentProg,……);
+		
+		//example
+			hShader = gltLoadShaderPairWithAttributes("vertexProg.vp",
+					"fragmentProg.fp", 2, 0, "vVertexPos", 1, "vNormal");
+				对于未两个属性位置进行0和1的选择是任意的，只要这个值在0 ~ 15范围之内。
+
+	设置源代码；
+		hVertexShader = glCreateShader(GL_VERTEX_SHADER);
+		hFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+		GLchar *fsStringPtr[1];
+		fsStringPtr[0] = (GLChar*)szShaderSrc;
+		glShaderSource(shader, 1, (const GLchar **)fsStringPtr, NULL);
+
+		szShaderSrc: 一个简单的字符指针,它指向作色器的完整代码，而shader则是我们加载的着色器对象的ID.
+
+	编译着色器:
+		glCompileShader(hVertexShader);
+		glCompileShader(hFragmengShader);
+
+		为了检查失败，我们使用以GL_COMPILE_STATUS标记为参数的glGetShader函数。
+			glGetShaderiv(hVertexShader, GL_COMPILE_STATUS, &testVal);
+			
+			testVal : GL_FALSE 编译失败
+			if(testVal == GL_FALSE)
+			{
+				char infoLog[1024];
+				glGetShaderInfoLog(hVertexShader, 1024, NULL, infoLog);
+				cout<<"The Shader at" <<szVertexProg <<"failed to compile with following error;\n"
+				<<infoLog<<"\n";
+				glDeleteShader(hVertexShader);
+				glDeleteShader(hFragmentShader);
+				return (GLuint)NULL;
+			}
+
+
+	连接和绑定：
+		对GLSL源代码进行编译之后，首先，我们要创建最终的着色器程序对象，并将顶点着色器和片段着色器与它绑定到一起。
+		hReturn = glCreateProgram();
+		glAttachShader(hReturn, hVertexShader);
+		glAttachShader(hReturn, hFragmentShader);
+		
+		//将属性变量名绑定到指定的数字属性位置
+		void glBindAttribLocation(GLuint shaderProg, GLuint attribLocation, const GLchar *szAttributeName);
+
+		glBindAttribLocation(hShader, GL_ATTRIBUTE_VERTEX, "vVertex");
+
+		eg:
+			//重复迭代这个参数列表
+			char *szNextArg;
+			int iArgCount = va_arg(attributeList, int); //属性数量
+			for(int i = 0 ; i < iArgCount; i++)
+			{
+				int index = va_arg(attributeList, int);
+				szNextArg = va_arg(attributeList, char*);
+				glBindAttribLocation(hReturn, index, szNextArg);
+			}
+			va_end(attributeList);
+
+		连接着色器:
+			glLinkProgram(hReturn);
+			//这些都不再需要了
+			glDeleteShader(hVertexShader);
+			glDeleteShader(hFragmetShader);
+
+6.1.5 使用着色器
+	要使用GLSL着色器，必须使用glUseProgram函数选定它：
+	glUseProgram(myShaderProgram);
+
+
+	eg:ShaderTriangle
+		//Load 
+		GLfloat vVerts[] = { -0.5f, 0.0f, 0.0f,
+							0.5f, 0.0f, 0.0f,
+							0.0f, 0.5f, 0.0f};
+
+		GLfloat vColors[] = { 1.0f, 0.0f, 0.0f, 1.0f,
+							0.0f, 1.0f, 0.0f, 1.0f,
+							0.0f, 0.0f, 1.0f, 1.0f	};
+
+		triangleBatch.Begin(GL_TRIANGLES, 3);
+		triangleBatch.CopyVertexData3f(vVerts);
+		triangleBatch.CopyColorDataf(vColors);
+		triangleBatch.End();
+
+		myIdentityShader = gltLoadShaderPairWithAttributes("ShaderIdentoty.vp",
+							"ShaderIdentity.fp", 2, GLT_ATTRIBUTE_VERTEX, "vVertex",
+							GLT_ATTRIBUTE_COLOR, "vColor");
+
+		//提交渲染
+		glUseProgram(myIdentityShader);
+		triangleBatch.Draw();
+
+	6.1.6  Provoking Vertex
+	
+
+6.2 着色器统一值
+		uniform float fTime;
+		uniform int iIndexl
+		uniform vec4 vColorValue;
+		uniform mat4 mvpMatrix;
+
+	6.2.1 寻找统一值
+		GLint glGetUniformLocation(GLuint shaderID, const GLchar* varName);
+
+		eg: 获取一个名为vColorValue的统一值的位置
+			GLint iLocation = glGetUniformLocation(myShader, "vColorValue");
+	6.2.2 设置标量和向量统一值
+		void glUniform1f(GLint location, GLfloat v0);
+		void glUniform2f(GLint location, GLfloat v0, GLfloat v1);
+		void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2);
+		void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
+
+		void glUniform1i(GLint location, GLint v0);
+		……………………………………………………
+		……………………………………………………
+		void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3);
+
+	6.2.3 设置统一数组
+		glUniform 函数还接受一个指针，假定指向一个数值数组.
+		void glUniform1fv(GLint location, GLuint count, GLfloat* v);
+		……
+		……
+		void glUniform4fv(GLint location, GLuint count, GLfloat* v);
+
+		void glUniform1iv(GLint location, GLuint count, GLint* v);
+		……
+		void glUniform1iv(GLint location, GLuint count, GLint* v);
+
+		cout: 代表每个含有x个分量的数组中有多少个元素,x是位于函数名末尾的数组
+		eg:
+			uniform vec4 vColor;
+			GLfloat vColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f};
+			glUniform4fv(iColorLocation, 1, vColor);
+
+	6.2.4 设置统一矩阵
+		着色器矩阵数据类型只有浮点类型。
+		glUniformMatrix2fv(GLint location, GLuint count, GLboolean transpose, const GLfloat *m);
+		glUniformMatrix3fv(GLint location, GLuint count, GLboolean transpose, const GLfloat *m);
+		glUniformMatrix4fv(GLint location, GLuint count, GLboolean transpose, const GLfloat *m);
+
+		count: 代表参数m中存储的矩阵数量
+		transpose： 矩阵按照列优先 GL_TRUE
+					GL_FALSE会导致这个矩阵在复制到着色器中时发生变换.
+
+	6.2.5 平面着色器 
+		功能：将几何图形进行变换并将其设置为一个单色。它使用的顶点属性只有顶点的位置，它还需要使用两个统一值，一个变换矩阵和一个颜色值。
+		 eg:
+		 #version 330
+		 uniform mat4 mvpMatrix;
+		 in vec4 vVertex;
+		 void main(void)
+		 {
+			gl_Position = mvpMatrix * vVertex;
+		 }
+
+
+		 #version 130
+		 uniform vec4 vColorValue;
+		 out vec4 vFragColor;
+		 void main(void)
+		 {
+			gl_FragColor = vColorValue;
+		 }
+
+		 //客户端
+		 GLuint flatShader;
+		 GLint locMP;
+		 GLint locColor;
+		 ……
+		 ……
+		 flatShader = gltLoadShaderPairWithAttributes("FlatShader.vp", "FlatShader.fp",
+						1, GLT_ATTRIBUTE_VERTEX, "vVertex");
+		locMVP = glGetUniformLocaltion(flatShader, "mvpMatrix");
+		locColor = glGetUniformLocation(flatShader, "vColorValue");
+
+	6.3 内建函数
+		6.3.1 三角函数
+		6.3.2 指针函数
+		6.3.3 几何函数
+		6.3.4 矩阵函数
+		6.3.5 向量相关函数
+		6.3.6 常用函数
+
+	6.4 模拟光线（Simulating Light)
+		6.4.1 简单漫射光
+			float intensity = dot(vSurfaceNormal, vLightDirection);
+
+		6.4.2 点光源漫反射着色器
+			#version 330
+			//input 
+			in vec4 vVertex;
+			in vec3 vNormal;
+			//
+			uniform vec4 diffuseColor;
+			uniform vec3 vLightPosition;
+			uniform mat4 mvpMatrix;
+			uniform mat4 mvMatrix;
+			uniform mat3 normalMatrix;
+			//
+			smooth out vec4 vVaryingColor;
+			void main(void)
+			{
+				//获取表面法线的视觉坐标
+				vec3 vEyeNormal = normalMatrix * vNormal;
+				//获取定点位置的视觉坐标
+
+				vec4 vPostion4 = mvMatrix * vVertex;
+				vec3 vPostion3 = vPosition4.xyz / vPosition4.w;
+				//获取到光源向量
+				vec3 vLightDir = normalize()
+			}
+
+		6.4.3	(未看)	
+		6.4.2	(未看)
+
+	6.5 访问纹理
+		
+		6.5.1 只有纹理单元
+			//顶点着色器 
+			#version 330
+			in vec4 vVertex;
+			in vec2 vTexCoords;
+			smooth out vec2 vVaryinTexCoords;
+			void main(void)
+			{
+				vVaryingTexCoords = vTexCoords;
+				gl_Positon = vVertex;
+			}
+
+			//片段着色器
+			#version 330
+			uniform sampler2D colorMap;
+			out vec4 vFragColor;
+			in vec4 vVaryingTexCoords;
+			void  main(void)
+			{
+				vFragColor = texture(colorMap, vVaryingTexCoords.st);
+			}
+
+			采样器 : sampler2D,一个采样器(sampler)实际上就是一个整数（我们使用glUnifom1i来设置它的值),它代表我们将要采样的纹理所绑定的纹理单元。
+
+			glUseProgram(myTexturedIdentityShader);
+			glBindTexture(GL_TEXTURE_2D, textureID);
+			GLint iTextureUniform = glGetUniformLocation(myTexturedIdentityShader, "colorMap");
+			glUniformli(iTextureUniform, 0 );
+			triangleBatch.Draw();
+
+		6.5.2 照亮纹理单元
+			
+
+
