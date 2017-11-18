@@ -1,0 +1,239 @@
+Chapter 7 纹理高级知识
+	7.1 矩形纹理
+		7.1.1 加载矩形纹理
+			glWriteTGA： 将屏幕图形保存为一个Targa文件。
+
+			eg: 加载矩形纹理
+				bool LoadTGATextureRect(const char *szFileName, GLenum minFilter, GLenum magFilter, GLenum wrapMode)
+				{
+					GLbyte *pBits;
+					int nWidth, nHeigth, nComponents;
+					GLenum eFormat;
+					//读入纹理位
+					pBits = gltReadTGABits(szFileName, &nWidht, &nHeight, &nComponents, &eFormat);
+					
+					if(pBits == NULL)
+						return false;
+					glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, wrapMode);
+					glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, wrapMode);
+					glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MIN_FILTER, minFilter);
+					glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_MAG_FILTER, magFilter);
+					glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+					glTexImage2D(GL_TEXTURE_RECTANGLE, 0, nComponents, nWidth, nHeight, 0, eFormat, GL_UNSIGNED_BYTE, pBits);
+
+					free(pBits);
+					return true;			
+				}
+
+		7.1.2 使用矩形纹理
+			
+			需要注意： 在glBindTexture函数调用过程中GL_TEXTURE_RECTANGLE的改变
+			glBindTexture(GL_TEXTURE_RECTANGLE, uTexture[3]);
+			LoadTGATextureRect("OpenGL_logo.tga", GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE);
+
+			设置投影矩阵:
+				M3DMatrix44f mScreenSpace;
+				m3dMakeOrithogtaphicMatrix(mScreenSpace, 0.0f, 800.0f, 0.0f, 600.0f, -1.0f, 1.0f);
+
+				我们使用GLBatch类和一个三角形扇在将要显示OpenGL标志的位置创建矩形.
+				int x = 500;
+				int y = 155;
+				int width = 300;
+				int height = 155;
+				logoBatch.Begin(GL_TRIANGLE_FAN, 4, 1);
+				 
+				 //左上角
+				 logoBatch.MultiTexCoord2f(0, 0.0f, height);
+				 logoBatch.Vertex3f(x, y, 0.0f);
+
+				 //左下角
+				 logoBatch.MultiTexCoord2f(0, 0.0f, 0.0f);
+				 logoBatch.Vertex3f(x, y - height, 0.0f);
+
+				 //右下角
+				 logoBatch.MultiTexCoord2f(0, width, 0.0f);
+				 logoBatch.Vertex3f(x + width, y - height, 0.0f);
+
+				 //右上角
+				 logoBatch.MultiTexCoord2f(0, width, height);
+				 logoBatch.Vertex3f(x + width, y , 0.0f);
+
+				 logoBatch.End();
+
+
+				 首先，我们需要有一个能够使用矩形纹理的纹理贴图着色器，我们只需要将采样器从Sampler2D类型改编为samplerRect类型。
+					#version 330
+					out vec4 vFragColor;
+					uniform samplerRect rectangleImage;
+					smooth in vec2 vVaryingTexCoord;
+					void main(void)
+					{
+						vFragColor = texture(rectangleImage, vVaryingingTexCoord);
+					}
+
+				开始渲染:
+					//开启混合,关闭深度测试
+					glEnable(GL_BLEND);
+					glDisable(GL_DEPTH_TEST);
+
+					glUseProgram(rectReplaceShader);
+					glUniformli(locRectTexture, 0);
+					glUniformMatrix4fv(locRectMVP, 1, GL_FALSE, mScreenSpace);
+					glBindTexture(GL_TEXTURE_RECTANGLE, uiTextures[3]);
+					logoBatch.Draw();
+
+					//恢复关闭混合并开启深度测试的状态
+					glDisable(GL_BLEND);
+					glEnable(GL_DEPTH_TEST);
+
+	7.2 立方体贴图
+		7.2.1 加载立方体贴图
+			立方体贴图新增加一下6个值，这些值可以传递到glTexImage2D。
+
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+			GL_TEXTURE_CUBE_MAP_POSITIVE_Y, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+			GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
+			这些常量展示了包围物体立方体表面的场景坐标方向。例如，要加载x轴正方向的贴图，就可以使用下面的函数.
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, iWidth, iHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, pImage);
+
+
+		7.2.2 创建天空盒
+			
+		7.2.3 创建反射
+			首先必须使用表面法线和指定顶点的向量在着色器中创建一个视觉坐标系中的反射向量。另外，为了获得一个真实的反射，还要考虑照相机的方向。
+
+				#version 330
+				in vec4 vVertex;
+				in vec3 vNormal;
+
+				uniform mat4 mvpMateix;
+				uniform mat4 mvMatrix;
+				uniform mat3 normalMatrix;
+				uniform mat4 mInverseCamera;
+
+				smooth out vec3 vVaryingTexCoord;
+
+				void main(void)
+				{
+					vec3 vEyeNormal = normalMatrix * vNormal;
+
+					vec4 vVert4 = mvMatrix * vVertex;
+					vec3 vEyeVertex = normalize(vVert4.xyz / vVert4.w);
+					//获取反射向量 
+					vec4 vCoords = vec4(reflect(vEyeVertex, vEyeNormal, 1.0);
+					//通过翻转的照相机进行旋转
+					vCoords = mInverseCamera * vCoords;
+					vVaryingTexCoord.xyz = normalize(vCoords.xyz);
+					gl_Postion = mvpMatrix * vVertex;
+				}
+
+	7.3 多重纹理
+		可以对实现进行查询，来查看支持的纹理单元数量：
+			GLint iUnits;
+			glGetIntegerv(GL_MAX_TEXTURE_UNITS, &iUnits);
+			默认情况下,第一个纹理单元为活动的纹理单元。所有纹理绑定操作都会影响当前活动的纹理单元。我们可以通过调用以纹理单元标识符为变量的glActiveTexture 来改变当前纹理单元。
+			例如：要切换到第二个纹理单元并将其绑定到指定的纹理上：
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, texture1D);
+
+		7.3.1 多重纹理坐标
+			默认情况下，GLBatch类不会以一个属性数组的形式提供任何纹理坐标.不过，在调用以nTextureUnits为参数的Begin函数时,我们最多可以指定4组纹理坐标.
+			void GLBatch::Begin(GLenum primitive, GLuint nVerts, GLuint nTextureUnits = 0);
+			
+			有两个函数可以提供纹理坐标.第一个函数时CopyTexCoordData2f,它的速度是最快的，因为它会一次复制整个一组纹理坐标.
+			void GLBatch::CopyTexCoordData2f(M3DVextor2f *vTexCoords, GLuint uiTextureLayer);
+
+			第二个函数则是使用较慢的每次一个顶点的接口，与立即模式类似.
+			我们可以通过两种方式指定一个二维纹理坐标，每次指定一个.
+			void GLBatch::MultiTexCoord2f(GLuint texture, GLclampf s, GLclampf t);
+			void GLBatch::MultiTexCoord2fv(GLuint texture, M3DVector2f vTexCoord);
+
+	7.4 点精灵(点快纹理)
+		Point Sprite
+		点精灵最常见的应用可能就要算粒子系统。
+
+		7.4.1 使用点
+			我们不能同时使用点精灵和抗锯齿点。在片段程序中，有一个内建变量gl_PointCoord，这是一个二分量向量,在顶点上对纹理坐标进行插值.
+				#version 330
+				out vec4 vFragColor;
+				in vec4 vStartColor
+				uniform sampler2D startImage;
+				void main(void)
+				{
+					vFragColor = texture(startImage, gl_PositonCoord) * vStartColor;
+				}
+
+		7.4.2 点大小
+			有两种方式可以设置点大小.第一种方式是glPointSize函数
+			void glPointSize(GLfloat size);
+			我们也可以在顶点着色器中用程序设置点大小.首先启用点大小模式.
+			glEnable(GL_PROGRAM_POINT_SIZE);
+
+		7.4.3 综合运用
+
+		7.4.4 点参数
+			通过glPointParameter函数，我们可以对点精灵的几个特性进行微调。
+			将GL_POINT_SPRITE_COORD_ORIGIN参数设置为GL_LOWER_LEFT，可以将纹理坐标系的原点放置在点的左下角。
+			glPointParameteri(GL_POINT_SPRITE_COORD_ORIGIN, GL_LOWER_LEFT);
+			点精灵的默认方向为GL_UPPER_LEFT。
+
+		7.4.5 异形点
+
+		7.4.6 点的旋转
+			eg:一个复杂的点精灵片段着色器
+			#version 330
+			uniform sampler2D sprite_texture;
+			in float angle;
+			out vec4 color;
+			void main(void)
+			{
+				const float sin_theta = sin(angle);
+				const float cos_thera = cos(angle);
+				const mat2 rotation_matrix = mat2(cos_theta, sin_theta, -sin_theta, cos_theta);
+
+				const vec2 pt = gl_PointCoord - vec2(0.5);
+				color = texture(sprite_texture, rotation_matrix * pt + vec(0.5));
+			}
+
+	7.5 纹理数组
+		7.5.1 加载2D纹理数组
+			纹理数组添加了两个新的纹理对象作为大多数纹理管理函数的有效参数,他们是GL_TEXTURE_1D_ARRAY和GL_TEXTURE_2D_ARRAY。
+				GLuint moonTexture;
+				……
+				……
+				glGenTextures(1, &moonTexture);
+				glBindTexture(GL_TEXTURE_2D, moonTexture);
+
+				纹理参数，环绕模式和过滤器的情况也是如此.
+
+				glTexparameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+
+		7.5.2 纹理数组索引
+			
+		7.5.3 访问纹理数组
+			在片段着色器中，我们有一个新类型的2D纹理数组采样器sampler2Darray,使用texture2DArray函数对这个纹理进行采样，并且传递一个3分量的纹理坐标.
+				#version 330
+				out vec4 vFragColor;
+				uniform sampler2DArray moonImage;
+				smooth in vec3 vMoonCoords;
+				void main(void)
+				{
+					vFragColor = texture2DArray(moonImage, vMoonCoords.stp);
+				}
+
+	7.6 纹理代理
+		我们可以做一个简单的测试，来弄清楚当前实现能够支持最大的纹理大小。
+		GLint maxSize;
+		glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxSize);
+		纹理坐标类型:
+					GL_MAX_3D_TEXTURE_SZIE
+					GL_MAX_CUBE_MAP_TEXTURE_SIZE
+
+		要弄清楚是否支持某种特定的纹理大小和格式，我们可以使用一个纹理代理(texture proxy).纹理代理是一种“伪造”的或者“代替”的纹理，不占内存空间，但是也是可以是一种加载纹理的有效尝试.
+		glTexImage2D(GL_PROXY_TETURE_2D, level, internalFormat, width, height, border, format, type, NULL);
+		纹理代理也可以用于纹理目标GL_PROXY_TEXTURE_1D, GL_PROXY_TEXTURE_3D和 GL_PROXY_TEXTURE_CUBE_MAP.
+
+		eg:
+			glTexImage2D(GL_PROXY_TEXTURE_2D, 0 GL_RGBA, 2048, 4096, 0, GL_BRGA, GL_UNSIGNED_BYTE, NULL);
+			然后查询是否支持相应的高度4096.
+			void glGetTexLevelParameter(GL_PROXY_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &height);

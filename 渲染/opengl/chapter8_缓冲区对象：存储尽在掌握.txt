@@ -1,0 +1,214 @@
+8.1 缓冲区
+	创建一个缓冲区非常简单，只是调用glGenBuffers来为我们所需要任何数量的新缓冲区创建名称.实际缓冲区对象将在第一次使用时创建。
+	GLuint pixBuffObjs[1];
+	glGenBuffres(1, pixBuffobjs);
+	然后我们可以将这个名字进行绑定来使用缓冲区了.
+	
+	------------------------------------------------------------------------------
+		名称					|			描述
+	------------------------------------------------------------------------------
+	 GL_ARRAY_BUFFER		|	数组缓冲区存储颜色，位置，纹理坐标等顶点属性，或者其他自定义属性
+	-------------------------------------------------------------------------------
+	 GL_COPY_READ_BUFFER	| 用作通过glCopyBufferSubData进行复制的数据源
+	------------------------------------------------------------------------------
+	 GL_COPY_WRITE_BUFFER	| 用于通过glCopyBufferSubData进行复制的目标
+	------------------------------------------------------------------------------
+	 GL_ELEMENT_ARRAY_BUFFER | 索引数组缓存区
+	------------------------------------------------------------------------------
+	 GL_PIXEL_PACK_BUFFER	| glReadPixels之类像素包装操作的目标缓冲区
+	------------------------------------------------------------------------------
+	 GL_PIXEL_UNPACK_BUFFER | 
+	------------------------------------------------------------------------------
+	 GL_TEXTURE_BUFFER		| 着色器可以通过纹理单元拾取来访问的缓冲区
+	------------------------------------------------------------------------------
+	 GL_TRANSFORM_FEEDBACK_BUFFER | 变换反馈顶点着色器写入的缓冲区
+	------------------------------------------------------------------------------
+	 GL_UNIFORM_BUFFER		| 着色器能够访问的Uniform值
+	------------------------------------------------------------------------------ 
+
+	eg:将新的缓冲区绑定到像素包装缓冲区绑定点,这样就能使用glReadPixels将像素数据复制到缓冲区中。
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, pixBuffObjs[0]);
+
+		解除绑定:
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+		清除缓冲区:
+		glDeleteBuffers(1, pixBuffObjs);
+
+	8.1.2 填充缓冲区
+		我们可以使用glBufferData函数来简单地将数据直接上传到任何类型的缓冲区中。
+
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, pixBuffObjs[0]);
+		glBufferData(GL_PIXEL_PACK_BUFFER, pixelDataSize, pixelData, GL_DYNAMIC_COPY);
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+		在调用glBufferData之前，我们必须将要使用的缓存区进行绑定。对glBufferData使用的目标与我们的
+		第一个参数绑定缓冲区是使用的目标相同。
+		第二个参数是我们将要上传的数据大小。
+		第三个参数则是将要被上传的数据本身。
+
+		GL_STREAM_DRAW 
+		GL_STREAM_READ
+		GL_STREAM_COPY
+		GL_STREAM_DRAW
+		GL_STATIC_READ
+		GL_STATIC_COPY
+		GL_DYNAMIC_DRAW
+		GL_DYNAMIC_READ
+		GL_DYNAMIC_COPY
+
+		我们可以使用glBufferSubData对已经存在的缓冲区中的一部分进行更新，而不会导致缓冲区其他部分的内容变为无效。
+		void glBufferSubData(GLenum target, inptr offset, sizeiptr size, const void *data);
+
+	8.1.3 像素缓冲区对象
+		第一个像素缓冲区对象绑定点是GL_PIXEK_PACK_BUFFER。当一个像素缓存区对象被绑定到这个目标上是，任何读取像素的OpenGL操作都会从像素缓冲区对象中获得他们的数据.这些操作包括:
+		glReadPixels
+		glGetTexImage
+		glGetCompressedTexImage
+		通常这些操作都会从一个帧缓冲区或者纹理中抽取数据，并将他们读回到客户端内存中。
+
+		第二个像素缓冲区对象绑定点是GL_PIXEK_UNPACK_BUFFER。
+
+		像素缓冲区对象是一个很好的容器，可以暂时存储GPU本地像素数据，但是在使用他们之前需要先为他们分配存储空间。和所有缓冲区一样，要调用glBufferData为这个缓冲区分配内存空间并用数据填充。但是
+		我们没有必要提供数据，为数据指针传递NULL可以简单地分配内存而不是进行填充。
+		glBufferData(GL_PIXEL_PACK_BUFFER, pixelDataSize, pixelData, GL_DYNAMIC_COPY);
+
+	从缓冲区中读取像素数据
+		这个函数从当前启用的读取缓冲区的特定位置获取像素，然后将他们复制到CPU内存中。
+			void* data = (void*)malloc(pixelDataSize);
+			glReadBuffer(GL_BACK_LEFT);
+			glReadPixels(0, 0, GetWidth(), GetHeight(), GL_RGB, GL_UNSIGNED_BYTE, pixelData);
+
+			
+			glReadBuffer(GL_BACK_LEFT);
+			glBindBuffer(GL_PIXEL_PACK_BUFFER, pixBuffObjs[0]);
+			glReadPixels(0, 0, GetWidth(), GetHeight(), GL_RGB, GL_UNSIGNED_BYTE, NULL);
+
+	使用PBO
+		eg: 首先，我们队必要的PBO进行初始化.
+			//创建模糊纹理
+			glGenTextures(6, blurTextures);
+
+			//分配一个像素缓冲区来对纹理和PBO进行初始化
+			pixelDataSize = GetWidth() * GetHeight() * 3 * sizeof(unsigned byte);
+			void* data = (void*)malloc(pixelDataSize);
+			memset(data, 0x00, pixelDataSize);
+
+			//位模糊特效设置6个纹理单元
+			//初始化纹理数据
+			for(int i = 0; i < 6; i++)
+			{
+				glActiveTexture(GL_TEXTURE1+i);
+				glBindTexture(GL_TEXTURE_2D, blurTextures[i]);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, GetWidth(), GetHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			}
+			//为像素的复制分配空间，以免我们在每次进行绘制是都调用函数原型
+			glGenBuffers(1, pixBuffObjs);
+			glBindBuffer(GL_PIXLE_PACK_BUFFER, pixBuffObjs[0]);
+			glBufferData(GL_PIXEL_PACK_BUFFER, pixelDataSize, pixelData, GL_DYNAMIC_COPY);
+			glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+
+
+			PBO处理的方式则不一样，我们不在将数据复制到CPU，而是将PBO绑定到GL_PIXEL_PACK_BUFFER，而在调用glReadPixel时，这些像素将被重新定向到PBO而不是再次会带CPU中。
+			然后，同一个缓冲区将从GL_PIXEL_PACK_BUFFER绑定点上解除绑定，然后在绑定到GL_PIXEL_UNPACK_BUFFER.在接下来调用glTexImage2D时，缓冲区中的像素数据将被加载到纹理上，他们
+			不会离开GPU，也不会与其他命令一起保持在管线中。
+				if(bUsePBOPath)
+				{
+					//首先将PBO绑定为包装缓冲区
+					//然后直接将像素读取到PBO
+					glBindBuffer(GL_PIXEL_PACK_BUFFER, pixBufferObjs[0]);
+					glReadPixels(0, 0, GetWidth(), GetHeight(), GL_RGB, GL_UNSIGNED_BYTE, NULL);
+					glBindBuffer(GL_PIXLE_PACK_BUFFER, 0);
+
+					//接下来将PBO绑定为解包缓冲区
+					//然后直接将像素读取到PBO，然后直接将像素放入纹理中
+					glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixBuffObjs[0]);
+
+					//为新的模糊设置纹理，每一帧都有增加
+					glActiveTexture(GL_TEXTURE0 + GetBlurTarget0());
+					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, GetWidth(), GetHeight(), 0, GL_RGB. GL_UNSIGNED_BYTE, NULL);
+					glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+				}
+				else
+				{
+					//获取屏幕像素并复制到客户端内存
+					glReadPixels(0, 0, GetWidth(), GetHeight(),GL_RGB, GL_UNSIGNED_BYTE, pixelData);
+					//将像素从客户端内存中移动到纹理中
+					//为新的模糊设置纹理单元，每一帧都增加
+					glActiveTexture(GL_TEXTURE0 + GetBlurTarget0());
+					glTexImage(GL_TEXTURE_2D, 0 , GL_RGB, GetWidth(), GetHeight(), 0, GL_RGB, GL_UNSIGNED_BYTE, pixelData);
+				}
+
+				//使用模糊着色器和所有模糊纹理进行全屏绘制
+				projectionMateix.PushMatrix();
+				projectionMatrix.LoadIdentity();
+				projectionMatrix.LoadMatix(orthMatrix);
+				modelViewMatrix.push();
+				modelViewMatrix.LoadIdentity();
+				glDisable(GL_DEPTH_TEST);
+				SetupBlurProg();//这个程序将所有纹理一起进行模糊
+				screenQuad.Draw();
+				glEnable(GL_DEPTH_TEST);
+				modelViewMatrix.PopMatrix();
+				projectionMatrix.PopMatrix();
+
+				//为下一帧转向下一个模糊纹理
+				AdvanceBlurTaget();
+
+
+
+	 8.1.4 缓冲区对象
+		缓冲区对象是如何在纹理上直接使用的.
+		一个纹理包含连个主要组成部分：纹理采样状态和包含纹理值的数据缓冲区
+		纹理缓冲区是作为普通的缓冲区来创建的，当他被绑定到一个纹理或者GL_TEXTURE_BUFFER绑定点事会成为真正的纹理缓冲区.
+			glBindBuffer(GL_TEXTURE_BUFFER, texBO[0]);
+			glBufferData(GL_TEXTURE_BUFFER, sizeof(float) * count, fileData, GL_STATIC_DRAE);
+
+		但是texBO必须绑定到一个纹理单元上才能真正变得有用。要将一个texBO绑定到一个纹理上，可以调用glTexBuffer,但首先要确保要使用的纹理已经进行了绑定.
+			glActiveTexture(GL_TEXTURE1);
+			glBindTextur4e(GL_TEXTURE_BUFFER, texBOTexture);
+			glTexBuffer(GL_TEXTURE_BUFFER, GL_R32F, texBO[0]);
+
+		注意：纹理缓冲区不能在桌上其中用普通的采样器----也就是sampler1D和sampler2D进行访问.我们必须使用一个新的采样器，也叫samplerBuffer.
+			我们可以使用texelFetch从纹理缓冲区进行读取。
+			uniform samplerBuffer lumCurveSampler;
+			void main(void)
+			{
+				……
+				int offset = int(vColor.r * (1024 - 1));
+				lumFactor.r = textlFetch(lumCurveSamper, offset).r；
+			}
+
+	8.2 帧缓冲区对象，摆脱窗口的限制
+		一个OpenGL窗口的表面长期一直被称作"帧缓冲区".但是现在OpenGL将绘制帧缓冲区到一个对象所需要的状态进行了封装,称作帧缓冲区对象(FBO);
+		8.2.1 如何使用FBO
+			创建新的FBO
+				GLuint fboName;
+				glGenFrameBuffers(1, &fboName);
+
+			然后绑定一个新的FBO来修改和使用它
+				glBindFramebuffer(GL_DRAE_FRAMEBUFFER, fboName);
+
+			销毁FBO
+				glDeleteFramebuffers(1, &fboName);
+
+		8.2.2 渲染缓冲区对象
+			现在我们可以与FBO进行交互了，我们需要将一些东西放在FBO中。渲染缓冲区对象，或者简称RBO，是一种图像表面，它是专门为了绑定到FBO而设计的。
+			创建RBO和创建FBO非常类似:
+			glGenRenderbuffers(3, renderBufferNames);
+			
+			渲染缓冲区的位移合法目标是GL_RENDERBUFFER.
+			glBindRenderbuffer(GL_RENDERBUFFER, renderBufferName[0]);
+
+			eg:
+				glBindRenderbuffer(GL_RENDERBUFFER, renderBufferNames[0]);
+				glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, screenWidth, screenHeight);
+				glBindRenderbuffer(GL_RENDERBUFFER, depthBufferName);
+				glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32, screenWidht, screenHeight);
+
+
+			绑定RBO:
+				

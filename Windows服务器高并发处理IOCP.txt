@@ -1,0 +1,105 @@
+网络编程：在Windows下使用完全端口模型，在Linux下使用Epool模型
+socket实现的原理和机制
+
+	Tips:
+		1:一个指定的端口不能被多个程序公用。
+		2：很多防火墙只允许特定目标的数据包通过。
+		3：服务器程序在Listen某个端口并accept某个连接请求后，会生成一个新的socket来对该请求进行处理。
+	TCP和UDP同属于传输层，共同架设在IP层（网络层）之上。而IP层值负责吧数据送到节点，而不能区分上面的不同应用，所以TCP和UDP协议在其基础上加入了端口的信息，端口于是标识的是一个节点上的一个应用。
+		
+	1，TCP连接
+		建立起一个TCP连接需要经过“三次握手”
+		第一次：客户端发送syn包（syn = j）到服务器，并进入SYN_SEND状态，等待服务器确认。
+		第二次：服务器收到syn包，必须确认客户的SYN(ack = j + 1),同时自己也发送一个SYN包（syn = k），即syn+ACK包，此时服务器进入SYN_RECV状态。
+		第三次：客户端收到服务器的SYN+ACK包，向服务器发送确认包ACK（ACK = K+ 1），此包发送完毕，客户端和服务器进入ESTABLISHED状态，完成第三次握手。
+
+一：完成端口的优点
+	1：完成端口会充分利用windows内核进行I/O的调度，是用于C/S通信模式中性能最好的网络同行模型。
+	2：完成端口和其他网络通信方式最大的区别在哪里？
+		（1）：所以要写高性能的服务器程序，要求通信一定要是异步的。
+		（2）：使用“同步通信（阻塞通信）+多线程”，因为线程切换时相当浪费CPU时间的，如果客户端的连入线程过多，这机会弄的CPU都忙着去切换线程了，根本没有多少时间去执行线程体。
+		（3）：而微软提出完成端口模型的初衷，就是为了解决这样“one-thread-per-client”的缺点，它充分利用内核对象的调度，只使用少量的几个线程来处理和客户端的所有通信，消除了无谓的线程上下文切换，最大限度的提高了网络通信的性能。
+	3：完成端口被广泛的应用于各个高性能服务器，例如Apache
+
+二：完成端口演示
+
+三:完成端口的相关慨念
+	3.1 异步通信机制及其几种实现方式的比较
+
+四：Windows socket之IO完成端口（IOCP）模型开发
+	一：创建IO完成端口
+		IO完成端口也是一个内核对象，调用一下函数创建IO完成端口内核对象。(1:创建一个IO完成端口对象。 2：将一个设备与一个IO完成端口关联起来)
+
+		HANDLE CreateIOCompletionPort(HANDLE hFile,							//设备句柄，在文档中就是套接字
+										HANDLE hExistingCompletionPort,		//与设备关联的IO完成端口。为NULL时，系统会创建新的完成端口
+										UNLOG_PTR CompletionKey,			//是一个对我们有意义的值，但是操作系统并不关心我们传入的值。一般用来区分各个设备。
+										DWORD dwNumberOfConcurrentThreads);	//告诉IO口同一时间最多能有多少喜爱城可运行（0位CPU的数量）
+
+		一般情况下，分两次调用这个函数，每次实现一个功能。
+
+		1:首先创建新的完成端口（不关联设备）：此时的hFile应该INVALID_HANDLE_VALUE
+			hIOPort = CreateIoCompletionPort(INVALI_HANDLE_VALUE, 0, 0);
+
+		2:将套接字与IO完成端口关联。
+			CreateIoCompletionPort(sListenSocket, hIOPort, 完成键, 0);
+			调用此函数就是告诉系统，当IO操作完成时，向完成端口发送一个IO操作完成通知。这些通知按照FIFO方式在完成队列中等待服务线程读取。
+
+		在利用IO完成端口开发套接字应用程序是，通常声明一个结构体保存与套接字相关的信息。该结构通常作为完成键传递给CreateIoCompletionPort用以区分与套接字相关的信息：
+			typedef struct _comletionKey
+			{
+				SOCKET s;
+				SOCKADDR_IN clientAddr;
+			}COMPLETIONKEY, *PCOMPLETIONKEY;
+
+		作为完成键传递给CreateIoCompletionPort代码。
+			PCOMPLETIONKEY pCompletionKey = new COMPLETIONKEY;
+			SOCKADDR_IN addr;
+			int len;
+			sAccept = accept(sListen, (SOCKADDR*)&addr, &len);
+			pCompletionKey->s = sAccept;
+			pCompletionKey->clientAddr = addr;
+			HANDLE h = CreateIoCompletionPort((HANDLE)sAccept, hIOPort, (DWORD)pCompletionKey, 0);
+
+		3:发起重叠IO操作
+			将套接字与IO完成端口关联后，应用程序可以调用一下函数，发送重叠IO操作
+			WSASend和WSASendTo
+			WSARecv和WSARecvFrom
+			在应用程序中通常声明一个和IO操作相关的结构体，它是WSAOVERLAPPED结构的扩展，用以保存每次IO操作的相关信息。
+			
+			typedef struct _io_operation_data
+			{
+				WSAOVERLAPPED	overlapped;
+				WSABUF			dataBuf;
+				CHAR			buffer[BUFFER_SIZE];
+			}IO_OPERATION_DATA;
+
+			除了上面这一种方法：将WSAOVERLAPPED结构作为IO_OPERATION_DATA的第一个成员外，还可以将IO_OPERATION_DATA结构继承自WSAPVERLAPPED结构。
+			下面演示调用WSARECV发起异步接受数据的过程：
+
+			IO_OPERATION_DATA *pIoData = new IO_OPERATION_DATA;
+			pIoData->dataBuf = pIoData->buffer;
+			pIoData->dataBuf.len = BUFFER_SIZE;
+			ZeroMemory(&pIoData->overlapped, sizeof(WSAOVERLAPPED));
+			if(WSARecv(sAccept, &(pIo->dataBuf), 1, &recvBytes, &flags, &(pIoData->overlapped), NULL) == SOCKET_ERROR)
+			{
+				if(WSAGetLastError() != ERROR_IO_PENDING)
+				{
+					return;
+				}
+			}
+
+		4:等待重叠IO操作结果：
+			服务线程启动后，调用GetQueuedCompletionStatus函数等待重叠IO操作的完成结果。当重叠IO操作完成时，IO操作完成通知被发送到完成端口上，此时函数返回。
+			BOOL GetQueuedCompletionStatus(
+					HANDLE			hCompletionPort,					//希望那个完成端口进行监视
+					PDWORD			pdwNumberOfBytesTransferred,		//返回在异步IO完成时传输的字节数
+					ULONG_PTR		pCompletionKey,						//返回完成键
+					OVERLAPPED**	ppOverlapped,						//返回异步IO开始是传入的OVERPALLED结构地址
+					DWORD			dwMilliSeconds);					//指定等待的时间
+
+		5：取消异步操作。
+			当关闭套接字，此时系统还有未完成的异步操作，应用程序可以调用CancelIO函数取消等待执行的异步操作。
+				bool CancleIo(HANDLE hFile);
+		6：投递完成通知
+			应用程序可以调用PostQueuedCompletionStatus函数向服务器发送一个特殊的完成通知，服务器收到通知后立即退出。
+			BOOL PostQueuedCompletionStatus(HANDLE hCompletionPort, DWORD dwNumBytes, ULONG_PTR CompletionKey, OVERLAPPED* pOverlapped);
