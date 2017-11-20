@@ -107,4 +107,4 @@ Chapter4 文件IO
 
 	4.8 通用I/O模型以外的操邹：ioctl()
 		#include <sys/ioctl.h>
-		int ioctl(int fd, int request, .../* argp */);
+		int ioctl(int fd, int request, .../* argp */)

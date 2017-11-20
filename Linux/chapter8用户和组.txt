@@ -1,0 +1,64 @@
+chapter8 用户和组
+
+8.1 密码文件 /etc/passwd
+	每行都包含7个字段，之间用冒号分割，如下所示：
+	mtk:x:1000:100:Michael:/home/mtk:/bin/base
+	按顺序介绍着7个字段：
+	登录名：
+	经过加密的密码：长度为13个字符
+	用户ID：
+	组ID：
+	注释：该字段存放关于用户的描述性文字。
+	主目录：用户登录后所处的初始路径
+	登录shell：一旦用于登录，便交由该程序控制
+
+8.2 shadow密码文件: /etc/shadow
+	
+8.3 组文件：/etc/group
+	对用户所属组信息的定义有两部分组成：
+		1：密码文件中相应用户记录的组ID字段。
+		2：组文件列出的用户所属各组。
+	系统中的/etc/group中的每一条记录都对应一个组，包含4个字段
+	users:x:100:
+	jambit:x:106:clsus,felli
+
+	分别是：
+		1：组名
+		2：经过加密处理过的密码
+		3：组ID
+		4：用户列表
+
+8.4 获取用户和组的信息
+	本解所要介绍的库函数，其功能包括从密码文件，shadow密码文件和组文件总获取单条记录。
+	从密码文件获取记录：
+		函数getpwname()和getpwuid()的作用是从密码文件中获取记录
+		#include <pwd.h>
+		struct passwd *getpwnam(const char *name);
+		struct passed *getpwuid(uid_t uid);
+
+	从组文件中获取记录：
+		函数getgrname()和getgrgid()的作用是从组文件中获取记录：
+		#include <grp.h>
+		struct group *getgrname(cosnt char *name);
+		struct group *getgrgip(gid_t gid);
+
+	 扫描密码文件和组文件中的所有记录：
+		函数setpwent(),getpwent()和endpwent()的作用是按顺序扫描密码文件中的记录。
+		#include <pwd.h>
+		struct passed *getepwent(void);
+		void setpwent(void);
+		voud endpwent(void)
+		eg:
+			struct passwd *pwd;
+			while( (pwd = getpwent()) != NULL)
+				printf("%-8s %5ld\n", pwd->pw_name, (long)pwd->pw_uid);
+			endpwent();
+
+		函数gergrent(),setgrent,endgrent()针对组文件执行类似的任务。
+
+	从shadow密码文件中个获取记录
+		#include <shadow.h>
+		struct spwd *getspnam(const char *name);
+		struct spwd *getspent(void);
+		void setspent(void);
+		void  endspent(void);

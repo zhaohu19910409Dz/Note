@@ -1,0 +1,68 @@
+Chapter7 内存分配
+本章将用于在堆或者栈上分配内存的函数。
+7.1 在堆上分配内存
+	通常将堆的当前的内存边界称为"program break"
+
+	7.1.1 调整program break: brk()和sbrk()
+		改变堆的大小（即分配或者释放内存),其实就像命令内核改变进程的program break位置一样简单。
+		传统的UNIX系统提供了两个操纵program break的系统调用：brk()和sbrk().
+		#include <unistd.h>
+		int brk(void *end_data_segmeng);
+		void *sbrk(intptr_t increment);
+
+	7.1.2 在堆上分配内存:malloc()和free()
+		一般情况下，C语言使用malloc函数族在对上分配和释放内存。比较brk()和sbrk()，具有以下优点
+		(1):属于C语言标准部分
+		(2):更易于在多线程中使用
+		(3):接口简单，允许分配小块内存
+		(4):允许随意释放内存块，他们被维护在于一个空闲的内存列表中，在后续内存分配调用是循环使用。
+
+		#include <stdlib.h>
+		void *malloc(size_t size);
+		malloc()返回内存块所采用字节对齐方式，总是适用于高效访问任何类型的C语言数据结构。在大多数硬件结构上，这意味着malloc是基于8字节或16字节边界来分配内存的。
+
+		free()函数释放ptr参数所指向的内存块，该参数应该是之前由malloc().
+		#include <stdlib.h>
+		void free(void *ptr);
+
+	7.1.3 malloc()和free()的实现
+		
+		malloc()调试的工具和库
+
+	7.1.4 在堆上分配内存的其他方法
+		用calloc()和realloc()分配内存
+		#include <stdlib.h>
+		void *calloc(size_t numitms, size_t size);
+		numitms:指定分配对象的数量
+		size：指定每个对象的大小
+		注意：calloc()会将分配的内存初始化为0，而malloc()返回的是为初始化的内存空间。
+		eg:
+			struct { /**/}myStruct;
+			struct myStruct *p;
+
+			p = calloc(1000, sizeof(struct myStruct));
+			if(p == NULL)
+				errExit("calloc");
+
+		realloc()函数用来调整（通常是增加)一块内存的大小，而此块内存应该是之前由malloc包中函数所分配的。
+		#include <stdlib.h>
+		void *realloc(void *ptr, size_t size);
+		realloc()增加了已分配的内存块的大小，则不会对额外分配的字节进行初始化。
+		使用calloc() 和realloc()分配的内存应使用free()来释放。
+
+		分配对齐的内存：memalign()和posix_memalign()
+			目的：在分配内存的时候，起始地址要与2的整数次幂边界对齐。
+			#include <malloc.h>
+			void *memalign(size_t boundary, size_t size);
+			作用：分配size个字节的内存，起始地址的参数boundary的整数倍，而boundary必须是2的整数次幂。
+
+			posix_memalign(),该函数由标准委员会于近期创建，只是出现在了少数UNIX实现上。
+			#include <stdlib.h>
+			int posix_memalign（void **memptr, size_t alignment, size_t size);
+
+7.2 在堆栈上分配内存:alloca()
+	alloca（)也可以动态分配内存，不过不是从堆上分配内存，而是通过增加栈帧的大小从堆栈上分配。
+	#include <alloca.h>
+	void *alloca(size_t size);
+	注意：不需要（实际上也决不能）调用free()来释放由alloca分配的内存。同样也不能调用realloc()来调整由alloca()分配的内存大小。
+		不能再一个函数的参数列表中调用alloca().
