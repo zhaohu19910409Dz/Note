@@ -1,0 +1,121 @@
+chapter6 进程
+ 重点关注进程虚拟内存的布局及内容。
+6.1 进程和程序
+	进程（process）是一个可执行程序（program）的实例。
+	程序是包含了一系列信息的文件，这些信息描述了如何在运行时创建一个进程，所包含的内容如下。
+	（1）：二进制格式标识：每个程序文件都包含用于描述可执行文件格式的元信息。
+	（2）：机器语言指令；对程序算法进行编码
+	（3）：程序入口地址：标识程序开始执行时的起始指令位置。
+	（4）：数据：包含的变量初始值和程序使用的字面量值
+	（5）：符号表以及重定位表：描述程序中函数和变量的位置以及名称。
+	（6）：共享库和动态链接信息：
+	（7）：其他信息
+
+6.2 进程号和父进程号
+	每个进程都有一个进程号（PID），进程号是一个正数，用以唯一标识系统中的某个进程。
+	#include <unistd.h>
+	pid_t getpid(void);
+	除少数系统进程外，init进程号为1，程序和运行改程序的进程号之间没有固定的关系。
+	Linux内核限制的进程号小于等于32767.
+	每个进程都有一个创建自己的父进程。使用系统调动getppid()可以检索出父进程的进程号
+	#include <unistd.h>
+	pid_t getppid(void);
+	1号进程——init进程，即所有进程的始祖。pstree(1)命令可以查看到这一“家族树”。如果子进程的父进程终止，则子进程就会变成“孤儿”，init进程随即将收养该进程，进程后续对getppid()的调用将返回进程号1.
+
+6.3 进程内存布局
+	每个进程所分配的内存有很多部分组成，通常称之为“段(segment)”.
+	文本段：包含了进程运行的程序机器语言指令。
+	初始化数据段：包含显示初始化的全局变量和静态变量。
+	未初始化数据段：包含未显示初始化的全局变量和静态变量。
+	栈(stack)：是一个动态增长和收缩的端，由栈帧(stack frames)组成。
+	堆(heap): 是可在运行时（为变量）动态进行内存分配的一块区域。
+	
+	在大多数UNIX实现中C语言编程环境提供了3个全局符号(symbol):etext,edata和end,可在程序内使用这些符号以获取相应程序文本段,初始化数据段和非初始化数据段结尾处下一字节的地址。使用这些符号，必须显示声明如下：
+	extern char etext, edata, end;
+6.4 虚拟内存管理
+	（1）：空间局部性：是指程序倾向于访问在最近访问过的内存地址附近的内存（由于指令是顺序执行的，且有时会按顺序处理数据结构）
+	（2）：时间局部性：是指程序倾向于在不久的将来再次访问最近刚访问过得内存地址（由于循环).
+
+6.5栈和栈帧率
+	函数的调用和返回使栈的增长和收缩呈线性。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+6.6 命令行参数
+	每个C语言程序都必须有一个称为main()的函数，作为程序启动的起点。
+
+6.7 环境列表
+	每个进程都有与其相关的称之为环境列表的字符串数组，或简称为环境。
+	从程序中访问环境：
+		在C语言程序中，可以使用全局变量char **environ访问环境列表。
+		e.g.:
+			extern char **environ;
+			int main(int argc, char *argv[])
+			{
+				char **ep;
+				for(ep = environ; *ep != NULL; ep++)
+				{
+					puts(*ep);
+				}
+			}
+	此外，还可以通过申明main()函数中的第三个参数来访问环境列表：
+	int main(int argc, char *argv[], char *envp[])
+	getenv()函数能够从进程环境中检索单个值。
+	#include <stdlib.h>
+	char *getenv(const char* name);
+
+	修改环境：
+		putenv()函数向调用进程的环境中添加一个新变量，或者修改一个已经存在的变量值。
+	#include <stdlib.h>
+	int putenv(char *string);
+	调用失败将返回非0值，而非-1.
+
+	setenv()函数可以代替putenv()函数，向环境中添加一个变量。
+	#include <stdlib.h>
+	int setenv(const char *name, const char *value, int overwrite);
+
+	unsetenv()函数从环境中移除由name参数标志的变量。
+	#include <stdlib.h>
+	int unsetenv(const char *name);
+
+	clearenv():
+	#define _BSD_SOURCE
+	#include <stdlib.h>
+	int clearenv(void);
+
+6.8 执行非局部跳转：setjmp()和longjmp()
+	使用库函数setjmp()和longjmp()可执行非局部跳转。
+	#include <setjmp.h>
+	int setjmp(jmp_buf env);
+	void longjmp(jmp_buf env, int val);
+	setjmp()调用为后续由longjmp()调用执行的跳转确立了跳转目标。该目标正是程序发起setjmp()调用的位置。
+
+
+
+
+
+
+
+
+
+
+
+
+
