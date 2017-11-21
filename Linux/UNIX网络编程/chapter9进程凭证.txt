@@ -1,0 +1,77 @@
+chapter9 进程凭证
+	每个进程都有一套用数字表示的用户ID（UID）和组ID(GID).有时也将这些ID称子为进程凭证。
+		1：实际用户ID和实际组ID
+		2：有效用户ID和有效组ID
+		3：保存的set-user-ID 和保存的set-group-ID
+		4：文件系统用户ID和文件系统组ID
+		5:辅助组ID
+9.1 实际用户ID和实际组ID
+	实际用户ID和实际组ID确定了进程所属的用户和组。作为登录过程的步骤之一，登录shell从/etc/passed文件中读取相应用户密码记录的第三字段和第四字段，置为其实际用户ID和实际组ID。创建新进程，将从其父进程中继承这些ID。
+
+9.2 有效用户ID和有效组ID
+	有效用户ID为0（root的用户ID）的进程拥有超级用户的所有权限。这样的进程有称为特权级进程。二某些系统调用只能由特权级进程执行。 
+
+9.3 Set-User-ID 和Set-Group-ID 程序
+	set-user-ID程序会将进程的有效用户ID设置为可执行文件的用户ID，从而获得常规情况下并不具有的权限。set-group-ID程序对进程有效组ID实现类似任务。
+	与其他文件一样，可执行文件的用户ID和组ID决定了改文件的所有权。另外，可执行文件还拥有两个特别的权限位set-user-ID位和set-group-ID位。‘
+	eg:
+		$su
+		Password:
+		#ls -l  prog
+		-rwxr-xr-x	1	root	root	302585	Jun 26 15:05 prog
+		#chmod u+s prog
+		#chmod g+s prog
+
+		#ls -l prog
+		-rwsr-xr-x	1	root	root	302585	Jun 26 15:05 prog
+
+9.4 保存set-user-ID 和保存set-group-ID
+
+9.5 文件系统用户ID和组ID
+	在Linux系统中，要进行诸如打开文件，改变文件属主，修改文件权限之类的文件系统操作时，决定其操作权限的是文件系统用户ID和组ID（结合辅助组ID），而非有效用户ID和组ID。
+
+9.6 辅助组ID
+	辅助组ID用于标识进程所属的若干附加的组。
+
+9.7 获取和修改进程凭证
+	可以利用Linux系统特有的proc/PID/status文件，通过对其中Uid, Gid和Groups各行信息的检查，来获取任何进程的凭证。
+	1：CAP_SETUID 能力允许进程任意修改其用户ID
+	2：CAP_SETGID 能力允许进程任意修改其组ID 
+
+	9.7.1 获取和修改实际，有效和保存设置标识
+		获取实际和有效ID
+			系统调用getuid()和getgid()分别返回调用进程的实际用户ID和组ID。而系统调用geteuid()和getegid()则对进程的有效ID实现类似功能。
+			#include <unistd.h>
+			uid_t getuid(void);
+			uid_t geteuid(void);
+			gid_t getgid(void);
+			git_t getegid(void);
+		修改有效ID：
+			#include <unistd.h>
+			int setuid(uid_t uid);
+			int setgid(git_t gid);
+			注意：
+			1：当非特权进程调用setuid()时，仅能修改进程的有效用户ID。
+			2：当特权进程以一个非0参数嗲用setuid()时，其实际用户ID，有效用户ID和保存set-user-ID 均被置为uid参数所指的值。
+			
+			进程能够使用seteuid()来修改其有效用户ID，还能使用setegid()来修改其有效组ID
+			#include <unistd.h>
+			int seteuid(uid_t euid);
+			int setegid(git_t egid);
+		修改实际ID和有效ID；
+			#include <unistd.h>
+			int setreuid(uid_t ruid, uid_t euid);
+			int setrguid(git_t rgid, git_t egid);
+			第一个参数：新的实际ID
+			第二个参数：新的有效ID
+
+		获取实际，有效和保存设置ID
+			在大多数UNIX实现中，进程不能直接获取（或修改）其保存set-user-ID和保存set-group-ID的值。然而Linux提供了两个（非标准)系统调用来实现此项功能：getresuid()和getresgid().
+			#define _GNU_SOURCE
+			#include <unistd.h>
+			int getresuid(uid_t *ruid, uid_t *euid, uit_t *suid);
+			int getresgid(git_t *rgid, gid_t *egid, git_t *sgid);
+
+		修改实际，有效和保存设置ID
+
+	9.7.2 获取和修改文件系统ID

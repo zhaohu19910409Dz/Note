@@ -62,3 +62,11 @@ chapter8 用户和组
 		struct spwd *getspent(void);
 		void setspent(void);
 		void  endspent(void);
+
+8.5 密码加密和用于认证
+	某些应用程序会要求用户对自身进行认证，通常采用用户名(登录名)/密码的认证方式。
+	由于安全方面的原因，UNIX系统采用单向加密算法对密码进行加密，这意味着由密码的加密形式将无法还原出原始密码。因此，验证候选密码的唯一方式是使用同一算法对其进行加密，并将解密结果与存储于/etc/shadow中的密码进行匹配。
+	加密算法封装于crypt()函数中。
+	#define _XOPEN_SOURCE
+	#include <unistd.h>
+	char *crypt(const char *key, const char *salt);
