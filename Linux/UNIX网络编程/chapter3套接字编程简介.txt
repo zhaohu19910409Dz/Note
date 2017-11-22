@@ -1,0 +1,102 @@
+chapter3套接字编程简介
+3.1 概述
+	地址转换函数在地址的文本表达和他们存放在套接字地址结构中的二进制值之间进行转换。多数现存的IPv4代码使用inet_addr和inet_ntoa这两个函数，不过这两个新函数inet_pton和inet_ntop同时适用于IPv4和IPv6.
+
+3.2 套接字地址结构
+	sockaddr_
+	3.2.1 IPv4套接字地址结构
+		IPv4套接字地址结构通常也称为"网际套接字地址结构"，它以sockaddr_in命令,定义在<netinet/in.h>头文件中
+		struct in_addr
+		{
+			in_addr_t s_addr;
+		};
+
+		struct sockaddr_in
+		{
+			uint8_t sin_len;
+			sa_family sin_family;
+			in_port_t	sin_port;
+			struct in_addr sin_addr;
+			char	sin_zero[8];
+		}
+
+		3.2.2 通用套接字地址结构
+		#include <sys/socket.h>
+		struct sockaddr
+		{
+			uint8_t sa_len;
+			sa_family_t	sa_family;
+			char	sa_data[14];
+		};
+		eg:int bind(int, struct sockaddr *, socklen_t_);
+			struct sockaddr_in serv;
+			/*  fill in serv */
+			bind(sockfd, (struct sockaddr*)serv, sizeof(serv));
+
+
+3.3 值-结果参数
+	socket传递的两种方式：1:从进程到内核 2:从内核到 进程
+	（1）：从进程到内核传递套接字地址结构的函数有3个：bind,connnet,sendto.这些函数的一个参数是指向某个套接字地址结构的指针，另一个参数是该结构的整数大下。
+		struct sockaddr_in serv;
+		/* fill serv */
+		connect(sockfd, (struct sockaddr*)serv, sizeof(serv));
+	(2):从内核到进程传递套接字地址结构的有四个函数：accept,recvfrom,getsockname和getpeername.
+		struct sockaddr_un cli;
+		socklen_t len;
+
+		len = sizeof(cli);
+		getpeername(unixfd, (struct sockaddr*)&cli, &len);
+
+3.4 字节排序函数
+	网际协议使用大端字节序来传送这些多字节整数。
+	#include <netinet/in.h>
+	uint16_t htons(uint16_t host16bitvalue);
+	uint32_t htonl(uint32_t host32bitvalue);
+	uint16_t ntohs(uint16_t net16bitvalue);
+	uint32_t ntohl(uint32_t net32bitvalue);
+	h: host
+	n: network
+	s: short
+	l: long
+
+3.5 字节操纵函数
+	#include <strings.h>
+	void bzero(void *dest, szie_t nbytes);
+	void bcopy(const void *src, void *dest, size_t nbytes);
+	int bcmp(const void *ptr, const void *ptr2, szie_t nbytes);
+
+	#include <string.h>
+	void *memset(void *dest, int c, size_t len);
+	void *memcpy(void *dest, const void *src, size_t nbytes);
+	int memcmp(const void *ptr1, const void *ptr2, size_t nbytes);
+
+3.6 inet_aton, inet_addr和inet_ntoa函数
+	（1）inet_aton,inet_addr和inet_ntoa在点分十进制数串("192.168.1.100")与它长度为32位的网络字节序二进制值间转换IPv4地址。
+	（2）两个较新的函数inet_pton和inet_ntop对于IPv4和IPv6地址都适用
+	#include <arpa/inet.h>
+	int inet_aton(const char *strptr, struct in_addr *addrptr);
+
+	in_addr_t inet_addr(const char *strptr);
+
+	char *inet_ntoa(struct in_addr inaddr);
+
+3.7 inet_pton和inet_ntop函数
+	p:presentation(表达式)->ASCII字符串
+	n:numeric(数值)->存放到套接字地址结构中的二进制值
+	#include <arpa/inet.h>
+	int inet_pton(int family, const char *strptr, void *addrptr);
+	const char *inet_ntop(int family, const void *addrptr, char *strptr, size_tlen);
+	eg:
+		inet_pton(AF_INET, cp, &foo.sin_addr);
+
+		char str[INET_ADDRSTRLEN];
+		ptr = inet_ntop(AF_INET, &foo.sin_addr, str, sizeof(str));
+
+3.8 sock_ntop和相关函数
+	struct sockaddr_in addr;
+	inet_ntop(AF_INET, &addr.sin_addr, str, sizeof(str));
+
+3.9 readn, writen和readline函数
+	
+
+	

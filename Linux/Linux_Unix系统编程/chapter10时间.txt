@@ -1,0 +1,78 @@
+chapter10 时间
+	1：真实时间：度量这一时间的起点有二：（1）某个标准点；（2）进程生命周期内的某个固定时点(通常为程序启动)
+	2：进程时间:一个进程所使用的CPU时间总量，适用于对程序，算法性能的检查或优化。
+10.1 日历时间(calendar Time)
+	日历时间存储于类型为time_t的变量中。
+	系统调用gettimeofday()，可于tv指向的缓冲区中返回日历时间
+	
+	#include <sys/time.h>
+	int gettimeofday(struct timeval *tv, struct timezone *tz);
+	参数tv指向的结构：
+	struct timeval
+	{
+		time_t tv_sec;			//	从00:00:00 1 Jan 1970 UTC 
+		suseconds_t tv_usec; //微妙
+	}
+
+	time()系统调用返回来自Epoch以来的秒数（和函数gettimeofday()所返回的tv参数中tv_sec字段的数值相同).
+	#include <time.h>
+	time_t time(time_t *timep);
+
+10.2 时间转换函数
+
+	10.2.1 将time_t 转换为可打印格式
+		#include <time.h>
+		char *ctime(const time_t *timep);
+		返回一个26字节的字符串，格式：Wed Jun 8 14:22:34 2011
+
+	10.2.2 time_t和分解时间之间的转换
+		函数gmtime()和localtime()可将一time_t值转换为一个所谓的分解时间。分解时间被置于一个经由静态分配的结构中，其地址则作为函数结果返回。
+		#include<time.h>
+		struct tm *gmtime(const time_t *timep);
+		struct tm *localtime(const time_t *timep);
+
+		函数mktime()将一个本地时区的分解时间翻译为time_t值，并将其作为函数结果返回。
+		#include <time.h>
+		time_t mktime(struct tm *timeptr);
+
+	10.2.3分解时间和打印格式之间的转换
+		从分解时间转换为打印格式
+			#include <time.h>
+			char *asctime(const struct tm *timeptr);
+
+		当把一个分解时间转化成打印格式是，函数strftime()可以提供更为精确的控制。令timeptr指向分解时间，strftime()会将以null结尾，由日期和时间组成的相应字符串置于outstr所指向的缓冲区中。
+		#include <time.h>
+		size_t strftime(char *outstr, size_t maxsize, const char *format, const struct tm *timeptr);
+
+		将打印格式时间转换为分解时间
+			函数strptime()是strftime的逆向函数
+
+10.3 时区
+	时区定义
+		/usr/share/zoncinfo
+		系统的本地时间由时区文件/etc/localtime定义，通常链接到/usr/share/zoneinfo下的一个文件。
+	为程序指定时区：
+		
+
+10.4 地区（Locale)
+	为程序设定地区
+	#include <locale.h>
+	char *setlocale(int category, const char *locale);
+
+10.5 更新系统时钟
+	settimeofday()和adjtime().
+	#define _BSD_SOURCE
+	#include <sys/time.h>
+	int settimeofday(const struct timeval *tv, const struct timezon *tz);
+
+10.6 软件时钟
+
+10.7 进程时间
+	进程时间是进程创建后使用的CPU时间数量。
+	系统调用times()，检索进程时间信息，并把结果通过buf指向的结构体返回。
+	#include <sys/times.h>
+	clock_t times(struct tms *buf);
+
+	函数clock()提供了一个简单的接口用于取得进程时间。它返回一个值描述了调用进程使用的总的CPU时间(包括用户和系统)
+	#include <time.h>
+	clock_t clock(void);
