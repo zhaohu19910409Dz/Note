@@ -1,0 +1,43 @@
+chapter5 
+	5.1 概述
+	5.2 TCP回射服务器程序:main函数
+		int main(int argc, char **argv)
+		{
+			int listenfd,connfd;
+			pid_t childpid;
+			socklen_t clilen;
+			struct sockaddr_in, cliaddr, servaddr;
+			listenfd = Socket(AF_INET, SOCK_STREAM, 0);
+			bzero(&servaddr, sizeof(servaddr));
+			servaddr.sin_famlily = AF+INET;
+			servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+			servaddr.sin_port = htons(SERV_PORT);
+			Bind(listenfd, (SA*)&servaddr, sizeof(servaddr));
+			Listne(listenfd,LISTENQ);
+			for(;;)
+			{
+				client = sizeof(cliaddr);
+				connfd = Accept(listenfd, (SA*)&cliaddr, &client);
+				if( (childpit = Fork()) == 0)
+				{
+					Close(listenfd);
+					str_echo(connfd);
+					exit(0);
+				}
+				Close(connfd);
+			}
+		}
+
+	5.3 TCP 回射服务器程序:str_echo函数
+		void str_echo(int sockfd)
+		{
+			ssize_t n;
+			char buf[MAXLINE];
+		again:
+			while( (n = read(sockfd, buf, MAXLINE)) > 0)
+				Writen(sockfd,buf, n);
+			if(n < 0 && error =- EINTR)
+				goto again;
+			else if(n < 0)
+				err_sys("error");
+		}

@@ -1,0 +1,32 @@
+chapter26 监控子进程
+	26.1 等待子进程
+		26.1.1 系统调用wait()
+			系统调用wait()等待调用进程的任一子进程终止，同时在参数status所指向的缓冲区中返回该子进程的终止状态。
+			#include <sys/wait.h>
+			pid_t wait(int *status);
+
+		26.1.2 系统调用waitpid()
+			#include <sys/wait.h>
+			pid_t waitpid(pid_t pid, int *status, int options);
+
+		26.1.3 等待状态值
+			由wait()和waitpid()返回的status的值，可以来区分一下子进程事件。
+				（1）：子进程调用_exit()(exit)而终止，并指定一个整数值作为退出状态。
+				（2）：子进程收到未处理信号而终止。
+				（3）：子进程因信号而停止，并以WUNTRACED标志调用waitpid().
+				（4）：子进程因收到信号SIGCONT而恢复，并以WCONTINUED标识调用waitpid()
+
+		2.1.4 从信号处理程序中终止进程
+
+		26.1.5 系统调用waitid()
+			#include <sys/wait.h>
+			int waitid(idtype idtype, id_t id, sininfo_t *info, int option);
+
+		26.1.6 系统调用wait3()和wait4()
+
+	26.2 孤儿进程与僵尸进程
+	
+	26.3 SIGCHLD信号
+		26.3.1 为SIGCHLD建立信号处理程序
+			无论一个子进程合适终止，系统都会向其父进程发送SIGCHLD信号。
+

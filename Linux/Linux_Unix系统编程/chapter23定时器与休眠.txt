@@ -1,0 +1,19 @@
+chapter23 定时器与休眠
+	23.1 间隔定时器	
+		#include <sys/time.h>
+		int setitimer(int which, const struct itimerval *newvalue, struct itimerval *old_value);
+		可以在任何时刻调用getitimer(),以了解定时器的当前状态，距离下次到期的剩余时间。
+	
+		#include <sys/time.h>
+		int getitimer(int which,struct itimerval *curr_value);
+
+		更为简单的定时器接口:alarm()
+		系统调用alarm()为创建一次性实时定时器提供了一简单接口。
+		#include <unistd.h>
+		unsigned int alarm(unsigned int seconds);
+
+	23.2 定时器的调度及精度
+	23.3 位阻塞操作设置超时
+		
+
+	
