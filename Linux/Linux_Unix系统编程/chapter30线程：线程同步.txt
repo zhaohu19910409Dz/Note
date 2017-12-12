@@ -1,0 +1,52 @@
+chapter30 线程：线程同步
+	互斥量(mutex),条件变量（condition variable)
+	30.1 保护对共享变量的访问：互斥量
+		互斥量有两种状态：已锁定（locked)和未锁定(unlocked)
+		30.1.1 静态分配的互斥量
+			互斥量属于pthread_mutex_t类型的变量。在使用之前必须对其初始化。对于静态分配的互斥量而言，可如下列所示，将PTHREAD_MUTEX_INITALIZER赋给互斥量。
+			pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+		30.1.2 加锁和解锁互斥量
+			#include <pthread.h>
+			int pthread_mutex_lock(pthread_mutex_t *mutex);
+			int pthread_mutex_unlock(pthread_mutex_t *mutex);
+
+			pthread_mutex_trylock()和pthread_mutex_timedlock()
+
+		30.1.3 互斥量的性能
+		30.1.4 互斥量的死锁
+		30.1.5 动态初始化互斥量
+			#include <pthread.h>
+			int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
+			int pthread_mutex_destroy(pthread_mutex_t *mutex);
+		30.1.6 互斥量的属性
+		30.1.7 互斥量类型
+			PTHREAD_MUTEX_NORMAL:该类型的互斥量不具有死锁检测功能。
+			PTHREAD_MUTEX_ERRORCHECK:对此类互斥锁的所有操作都会执行错误检测。
+			PTHREAD_MUTEX_RECURSIVE:递归互斥量维护有一个锁计数器。
+	30.2 通知状态的改变：条件变量(Conditioon Variable)
+		互斥量方式多个线程同时访问同一共享变量。条件变量允许一个线程就某个共享变量的状态变化通知其他线程，并让其他线程等待（阻塞于）这一通知。
+		30.2.1 由静态分配的条件变量
+			如同互斥量一样，条件变量的分配，由静态和动态之分。
+			条件变量的数据类型是pthread_count_t。类似于互斥量，使用条件前必须对其初始化。对于经由静态分配的条件变量，将其赋值为PTHREAD_COUNT_INITALIZER即完成初始化操作。
+			pthread_count_t cond = PTHREAD_COND_INITALIZER;
+		30.2.2 通知和等待条件变量
+			发送信号：
+				#include <pthread.h>
+				int pthread_cond_signal(pthread_cond_t *cond);
+				int pthread_cond_broadcast(pthread_cond_t *cond);
+			等待通知：
+				#include <pthread.h>
+				int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
+
+			注意：
+				pthread_cond_signal()函数只保证唤醒至少一条遭到阻塞的线程。
+				pthread_cond_broadcast()则会唤醒所有遭阻塞的线程。
+				
+				#include <pthread.h>
+				int pthread_cond_timewait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime);
+		30.2.3 测试条件变量的判断条件（predicate)
+		30.2.4
+		30.2.5 经由动态分配的条件变量
+			#include <pthread.h>
+			int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr);
+			int pthread_cond_detroy(pthread_cond_t *cond);

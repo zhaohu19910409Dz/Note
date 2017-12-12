@@ -1,2 +1,27 @@
 chapter27 程序的执行
-	
+	27.1执行新程序:execve()
+		#include <unistd.h>
+		int execve(const char *pathname, char *const argv[], char *const envp[]);
+		通常可通过errno来判断出错原因。
+		EACCES：
+		ENOENT：pathname所指代的文件并不存在。
+
+	27.2 exec()库函数
+		#include <unistd.h>
+		int execle(const char *pathname, const char *arg, ...)
+		……………………
+		……………………
+		……………………
+
+		27.2.1 环境变量PATH
+		27.2.2 将程序参数指定为列表
+		27.2.3 将调用者的环境传递给新程序
+		27.2.4 执行由文件描述符指代的程序：fexecve()
+			#include <unistd.h>
+			int fexecve(int fd, char *const argv[], char *const envp[]);
+	27.3 解释器脚本
+		#！ /bin/sh
+		解释器脚本的执行
+	27.4 文件描述符和exec
+	27.5 信号和exec()
+		

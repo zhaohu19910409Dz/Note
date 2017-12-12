@@ -41,3 +41,14 @@ chapter5
 			else if(n < 0)
 				err_sys("error");
 		}
+
+	5.4 TCP 回射客户程序：main函数
+	5.5 
+	5.6 正常启动
+	5.7 正常终止
+	5.8 POSIX信号
+	5.9 处理SIGCHILD信号
+	5.10 wait和waitpid函数
+		#include <sys/wait.h>
+		pid_t wait(int *status);
+		pid_t waitpid(pit_t pid, int *status, int options);

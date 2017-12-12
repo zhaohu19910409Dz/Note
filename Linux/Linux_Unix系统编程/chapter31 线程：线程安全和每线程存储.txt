@@ -1,0 +1,17 @@
+chapter31
+	31.1 线程安全（再论可重入性)
+	31.2 一次性初始化
+		多线程程序有时候有这样的需求：不管创建了多少线程，有些初始化动作只能发生一次。
+		库函数可以通过函数pthread_once()实现一次性初始化。
+		#include <pthread.h>
+		int pthread_once(pthread_once_t *once_control, void (*init)(void));
+		void  init(void)
+		{
+		
+		}
+
+		注意：参数once_control必须是指针，指向初始化为PTHREAD_ONCE_INIT的静态变量。
+			pthread_once_t once_var = PTHREAD_ONCE_INIT;
+	31.3 线程特有数据
+		31.3.1 库函数视角下的线程特有数据
+			

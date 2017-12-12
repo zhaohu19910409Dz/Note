@@ -1,0 +1,68 @@
+chapter29 线程：介绍
+	POSIX线程，即Pthreads
+	29.1 概述
+		与进程类似，线程是允许应用程序并发执行多个任务的一种机制。（传统意义上的UNIX进程只是多线程程序的一个特列，该进程只包含一个线程）
+		（1）：进程间的信息难以共享。
+		（2）：调用fork()来创建进程的代价相对较高。
+		线程解决了上述两个问题：
+
+	29.2 Pthreads API 的详细背景
+		线程数据类型 ：
+			pthread_t			线程ID
+			pthread_mutex_t		互斥对象
+			pthread_mutexattr_t	互斥属性对象
+			pthread_cond_t		条件变量
+			pthread_condattr_t	条件变量属性对象
+			pthread_key_t		线程特有数据的键
+			pthread_once_t		一次性初始化控制上下文
+			pthread_attr_t		线程的属性对象
+		线程和errno：
+			在多线程程序中，每个线程都有属于自己的errno.
+		Pthreads函数返回值
+			从系统调用和库函数中返回状态，传统的做法是：返回0标识成功，返回-1表示失败，并设定errno以标识错误原因。
+			Pthread API则相反，0表示成功，正值表示失败，失败原因errno.
+				pthread_t *thread;
+				int s;
+				s = pthread_create(&thread, NULL, func, &arg);
+				if(s != 0)
+					errExitEN(s , "pthread_create");
+		编译Pthreads程序
+			在Linux平台上，在编译调用了Pthreads API的程序中，需要设置cc-pthread的编译选项。使用该项的效果如下：
+			（1）：定义_REENTRANT预处理宏。这会公开对少数可重入函数的声明。
+			（2）：程序会与库libpthread进行链接（等价于-lpthread).
+
+	29.3 创建线程
+		#include <pthread.h>
+		int pthread_create(pthread_t *thread, const pthread_attr *attr, void *(*start)(void *), void *arg);
+
+	29.4 终止线程
+		（1）:线程start函数执行return 语句并返回指定值。
+		（2）：线程调用pthread_exit().
+		（3）：调用pthread_cancle()取消线程
+		（4）：任意线程调用了exit(),或者主线程执行了return语句（在main函数中），都会导致进程的所有线程立即终止。
+		pthread_exit()函数将终止调用线程，且其返回值可有另一线程通过调用pthread_join()来或者。
+		#include <pthread.h>
+		void pthread_exit(void *retval);
+	29.5 线程ID（Thread ID）
+		进程内部的每个线程都有一个唯一标识，称为线程ID。线程ID会返回给pthread_create()的调用者，一个线程可以通过pthread_self()来获取自己的线程ID.
+		#include <pthread.h>
+		pthread_t pthread_self(void);
+
+		函数pthread_equal()可检查两个线程的ID是否相同。
+		#include <pthread.h>
+		int pthread_equal(pthread_t l1, pthread_t t2);
+
+	29.6 连接(joining)已终止的线程
+		函数pthread_join()等待由thread标识的线程终止。（如果线程已经终止，则pthread_join()会立即返回）。这种操作被称为连接(joining).
+		#include <pthread.h>
+		int pthread_join(pthread_t thread, void **retval);
+
+	29.7 线程的分离
+		默认情况下，线程是可连接的，也就是说，当线程退出时，其他线程可以通过调用pthread_join()获取其返回状态。
+		#include <pthread.h>
+		int pthread_detach(pthread_t thread);
+		一旦线程处于分离状态，就不能再使用pthread_join()来获取其状态，也无法使其重返"可连接"状态。
+
+	29.8 线程属性
+	29.9 线程 VS 进程
+		

@@ -1,0 +1,40 @@
+chapter6
+	6.1 概述
+		I/O复用典型使用在下列网络应用场合。
+		（1）：当客户处理多个描述符时，必须使用IO复用
+		（2）：一个客户同时处理多个套接字是可能的，不过不叫少见。
+		（3）：如果一个TCP服务器既要处理监听套接字，又要处理已连接套接字。
+		（4）：如果一个服务器既要处理TCP，又要处理UDP
+		（5）：如果一个服务器要处理多个服务或多个协议
+		IO复用并非只限于网络，许多重要的应用程序也需要使用这项技术。
+
+	6.2 I/O模型
+		在Unix下可用的5种I/O模型的基本区别：
+		（1）阻塞式I/O
+		（2）非阻塞式I/O
+		（3）I/O复用（select和poll）
+		（4）信号驱动式I/O(SIGIO)
+		（5）异步I/O(POSIX的aio_系列函数)
+		6.2.1 阻塞式I/O
+		6.2.2 非阻塞式I/O模型
+		6.2.3 I/O复用模型
+			有个I/O复用,我们就可以调用select或poll,阻塞在这两个系统调用中的某一个之上，而不是阻塞在真正的I/O系统调用上。
+		6.2.4 信号驱动式I/O模型
+			我们也可以用信号，让内核在描述符就绪时发送SIGIO信号通知我们。我们称这种模型为信号驱动式I/O
+		6.2.5 异步I/O模型
+	6.3 select函数
+		该函数允许进程指示内核等待多个事件中的任何一个发生，并且在有一个或多个事件发生或经历一段指定的时间后才唤醒它。
+		我们调用select告知内核对那些描述符（就读写或异常)感兴趣以及等待多长时间。
+		#include <sys/select.h>
+		#include <sys/time.h>
+		int select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, cosnt struct timeval *timeout);
+		struct timeval
+		{
+			long tv_sec; //秒
+			long tv_usec;//微妙
+		};
+
+		void FD_ZERO(fd_set *fdset);
+		void FD_SET(int fd, fd_set *fdset);
+		void FD_CLR(int fd, fd_set *fdset);
+		int	FD_ISSET(int fd, fd_set *fdset);

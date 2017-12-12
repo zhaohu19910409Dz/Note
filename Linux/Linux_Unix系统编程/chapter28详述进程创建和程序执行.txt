@@ -1,0 +1,8 @@
+chapter28 
+	28.1 进程记账
+		打开进程记账功能后，内核会在每个进程终止时将一条记账信息写入系统级的进账文件。
+		打开和关闭进账功能
+			特权进程可利用系统调用acct()来打开和关闭进程记账功能。
+			#define _BSD_SOURCE
+			#include <unistd.h>
+			int acct(const char *acctfile);
