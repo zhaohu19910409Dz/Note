@@ -1,0 +1,106 @@
+chapter41 共享库基础
+	共享库是一种将库函数打包成一个单元使之能够在运行时被多个进程共享的技术。
+	41.1 目标库
+	41.2 静态库
+		创建和维护静态库
+			静态库的名称形式为libname.a
+			使用ar(1)命令能够创建和维护静态库，其通用形式如下所示：
+			$ar option archive object-file...
+			option:
+				r(替换)：
+				t(目录表)：
+				d(删除)：
+		使用静态库：
+			(1):$cc -g -c prog.c
+				$cc -g -o prog prog.o libdemo.a
+			(2):将静态库放在连接器搜索的其中一个标准目录中（如/usr/lib)
+				$cc -g -o prog prog.o -Idemo
+				$cc -g -o prog prog.o -Lmylibdir -Idemo
+	41.3 共享库概述
+		虽然共享库的代码是由多个进程共享的，但其中的变量却不是的。每个使用库的进程会拥有自己的在库中定义的全局和静态变量的副本。
+	41.4 创建和使用共享库----首回合
+		41.4.1 创建一个共享库
+			为了构建之前创建的静态库的共享版本，需要执行下面的步骤。
+			$gcc -g -c -fPIC -Wall mod1.c mod2.c mod3.c
+			$gcc -g -share -o libfoo.so mod1.c mod2.c mod3.o
+			共享库的前缀为lib,后缀为.so(表示shared object).
+			$gcc -g -fPIC -Wall mod1.c mod2.c mod3.c -shared -o libfoo.so
+		41.4.3 使用一个共享库
+			$LD_LIBRARY_PATH= ../prog
+			$gcc -g -Wall -o prog prog.c libfoo.so
+		41.4.4 共享库soname
+			使用soname的第一步是在创建共享库时指定soname.
+			$gcc -g -c -fPIC -Wall mod1.c mod2.c mod3.c
+			$gcc -g -shared -W1,-soname,libbar.so -o libfoo.so mod1.o mod2.c mod3.o
+			_W1,-soname以及libbar.so选项是传给连接器的指令以将共享库libfoo.so的soname设置为libbar.so
+			
+			如果要确定一个既有共享库的soname,那么可以使用下面两个命令中的任意一个。
+			$objdump -p libfoo.so |gerp soname
+				SONAME libbar.sp
+			$raedelf -d libfoo.so | grep SONAME
+				0x0000000e (SONAME) Library soname:[libbar.so]
+			在使用soname创建了一个共享库之后就可以照常常见可执行文件了：
+			
+			$gcc -g -Wall -o prog prog.c libfoo.so
+			$ln -s libfoo.so libbar.so
+			$LD_LIBRARY_PATH=../prog
+	41.5 使用共享库的有用工具
+		ldd命令：
+			ldd(1)列出动态依赖命令显示了一个程序运行所需的共享库
+		objdump和readelf:
+		nm命令：
+			nm命令会列出目标库或可执行程序中定义的一组符号。这个命令的一种用途是找出那些库定义了一个符号。如果找出哪个库定义了crypt()函数则可以像下面这样做。
+			$nm -A /usr/lin/lib*.so 2>/dev/null |grep 'crypt$	
+
+	41.6 共享库版本和命名规则
+		真实名称,soname以及连接器名称
+		libname.so.major-id.minor-id.
+
+		使用标准规范创建一个共享库
+		1：创建目标文件
+			$gcc -g -c -fPIC -Wall mod1.c mod2.c mod3.c
+		2：创建共享库：
+			$gcc -g -shared -W1,-soname,libdemo.so.1 -o libdemo.so.1.0.1 mod1.o mod2.o mod3.o
+		3：为soname 和连接器名称创建恰当的符号链接
+			$ln -s libdemo.so.1.0.1 libdemo.so.1
+			$ln -s libdemo.so.1 libdemo.so
+		4：接着可以使用ls来验证配置（使用awk来选择感兴趣的字段)
+			$ls -l libdemo.so* | awk '{print $1, $9, $10, $11}'
+		5:接着可以使用连接器名称来构建可执行文件（注意连接器命令不会用到版本号），并照常运行这个程序
+			$gcc -g -Wall -o prog prog.c -L. -ldemo
+			$LD_LIBRARY_PATH=../prog
+	41.7 安装共享库
+		一般来讲共享库及其关联的符号链接会被安装在其中一个标准目录中，标准库目录包括：
+			1：/usr/lib
+			2:/lib
+			3:/usr/local/lib
+			4:其中一个在/etc/ld.so.conf中列出的目录
+
+		$su
+		Password:
+		$mv libdemo.so.1.0.1 /usr/lib
+		$cd /usr/lib
+		$ln -s libdemo.so.1.0.1 libdemo.so.1
+		$ln -s libdemo.so.1 libdemo.so
+
+	ldconfig
+		ldconfig(8)解决了共享库的两个潜在问题。
+		1：共享库可以位于各种目录中，如果动态连接器需要通过搜索所有这些目录来找出一个库并加载这个库，那么整个过程将非常慢。
+		2：当安装了新版本的库或者删除了旧版本的库，那么soname符号链接就不是最新的。
+			
+		每当安装了一个新库，更新或删除了一个既有库，以及/etc/ld.so.conf中的目录列表被修改之后，都应该运行ldconfig
+		eg:安装一个库的两个不同的主要版本，那么需要做下面的事情
+			$su
+			Password:
+			#mv libdemo.so.1.0.1 libdemo.so.2.0.0 /usr/lib
+			#ldconfig -v | grep libdemo
+			还需要为连接器名称创建符号链接，如下面的命令所示：
+			$ln -s libdemo.so.2 libdemo.so
+	41.8 兼容和不兼容库比较
+	41.9 升级共享库
+	41.10 在目标文件中指定库搜索目录
+		动态连接器共享库位置：
+			1：使用LD_LIBRARY_PATH环境变量
+			2：将共享库安装到标准目录中(/lib,/usr/lib,/etc/ld.so.cong中列出的一个目录)
+			3：在静态编译阶段可以再可执行文件中插入一个在运行时搜索共享库的目录列表，要实现这种方式需要在创建可执行文件时使用-rpath连接器选项。
+			$gcc -g -Wall -W1,-rpath,/home/mtk/pdir -o prog prog.c libdemo.so

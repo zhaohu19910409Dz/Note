@@ -1,0 +1,34 @@
+chapter25 进程的终止
+	25.1 进程的终止：_exit()和exit()
+		#include <unistd.h>
+		void _exit(int status);
+		调用_exit()的程序总会成功终止。EXIT_SUCCESS(0),EXIT_FAILURE(1)
+	
+		程序一般不会直接调用_exit(),而是调用库函数exit(),它会在调用_exit()前执行各种动作。
+		#include <stdlib.h>
+		void exit(int status);
+	25.2 进程终止的细节
+		无论进程是否正常终止，都会发生如下动作。
+	25.3 退出处理程序
+		注册退出处理程序
+			#include <stdlib.h>
+			int atexit(void (*func)(void));
+
+			void func(void)
+			{
+			}
+			可以注册多个退出处理程序。当调用exit()时，这些函数的执行顺序与注册顺序相反。
+
+			#define _BSD_SOURCE
+			#include <stdlib.h>
+			int on_exit(void (*func)(int, void*), void *arg);
+			函数on_exit()的参数func是一个指针，指向如下类型的函数：
+			void func(int status, void *arg)
+			{
+			
+			}
+
+	25.4 fork(),stdio缓冲区以及_exit()之间的交互
+		当标准输出定向到终端时，因为缺省为行缓冲，所以会立即显示函数printf()输出的包含换行符的字符串。
+		当标准输出定向到文件时，由于缺省为快缓冲，所以当调用fork()时，printf()输出的字符串仍在父进程的stdio缓冲区中，并随子进程建立了一个副本。
+		write()会将数据直接传给内核缓冲区，fork()不会复制这一缓冲区。write()的结果先于printf()而出现，是因为write()会将数据立即传给内核高速缓存，而printf()的输出则要等到调用exit()刷新stdio缓冲区时。
