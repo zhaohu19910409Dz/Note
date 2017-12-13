@@ -1,0 +1,31 @@
+chapter32 线程：线程取消
+	32.1 取消一个线程
+		#include <pthread.h>
+		int pthread_cancel(pthread_t thread);
+	32.2 取消状态及类型
+		函数pthread_setcancelstate()和pthread_setcanceltype()会设定标志，允许线程对取消请求的响应过程加以控制。
+		#include <pthread.h>
+		int pthread_setcancelstate(int state, int *oldstate);
+		int pthread_setcanceltype(int type,int *oldstate);
+		state:
+			PTHREAD_CANCEL_DISABLE:线程不可取消。
+			PTHREAD_CANCEL_ENABLE.线程可以取消，这是新建线程取消性状态的默认值
+		type：
+			如果线程的取消性状态为“启用”PTHREAD_CANCEL_ENABLE,那么对取消请求的处理则取决于线程的取消性类型，该类型通过函数pthread_setcanceltype()时的参数type给定。
+			PTHREAD_CANCLE_ASYNCHRONOUS:异步取消
+			PTHREAD_CANCEL_DEFERED:取消请求保持挂起状态，直至到达取消点。
+		32.3 取消点
+		32.4 线程可取消检测
+			#include <pthread.h>
+			void pthread_testcancel(void);
+		32.5 清理函数
+			#include <pthread.h>
+			void pthread_cleanup_push(void (*routine)(void*), void *arg);
+			void pthread_clean_pop(int execute);
+
+			void routine(void *arg)
+			{
+			
+			}
+	32.6 异步取消
+		

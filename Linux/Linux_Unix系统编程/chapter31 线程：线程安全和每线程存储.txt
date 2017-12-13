@@ -14,4 +14,23 @@ chapter31
 			pthread_once_t once_var = PTHREAD_ONCE_INIT;
 	31.3 线程特有数据
 		31.3.1 库函数视角下的线程特有数据
+		31.3.2 线程特有数据API概述
+			要使用线程特有数据，库函数执行的一般步骤如下：
+		31.3.3 线程特有数据API详述
+			#include <pthread.h>
+			int pthread_key_create(pthread_key_t *key,void (*destructor)(void*));
+			void dest(void *value)
+			{
+			
+			}
+		31.3.4线程特有数据的实现限制
+	31.4 线程局部存储
+		线程局部存储主要优点在于，比线程特有数据的使用要简单。要创建线程局部变量，只需要简单地在全局或静态变量的声明中包含_thread说明符即可。
+		static _thread buf[MAX_ERROR_LEN];
+		但凡带有这种说明符的变量，每个线程都拥有一份对变量的拷贝。
+			#include <pthread.h>
+			int pthread_setspecific(pthread_key_t key, const void *value);
+			void *pthread_getspecific(pthread_key_t key);
+		31.3.4 使用线程特有数据API
+			
 			
