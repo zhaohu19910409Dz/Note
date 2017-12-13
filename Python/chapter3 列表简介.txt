@@ -1,0 +1,76 @@
+chapter3 列表简介
+3.1 列表是什么
+	列表是一系列按特定顺序排列的元素组成。
+	bicycle = ['trek','cannondale']
+	print bicycle
+
+	3.1.1 访问列表元素
+		print(bicyle[0])
+	3.1.2 索引从0而不是从1开始
+		Python为了访问一个列表元素提供了一种特殊语法。通过将索引指定为-1，可让Python返回最后一个列表元素。
+		print(bocycles[-1])
+		索引-2：返回倒数第二个……
+	3.1.3 使用列表中的各个值
+
+3.2 修改,添加和删除元素
+	3.2.1 修改列表元素
+		array = ['one','two','three']
+		array[0] = 'first'
+	3.2.2 在列表中添加元素
+		1.在列表尾部添加元素
+			array.append('four')
+		2.在列表中插入元素
+			array.insert(0,'insert0')
+	3.2.3 从列表中删除元素
+		1.使用del语句删除元素
+			del array[0]
+		2.使用方法pop()删除元素
+			方法pop()可删除列表尾的元素，并让你能够接着使用它。
+			print(array.pop())
+		3.弹出列表中任何位置处的元素
+			second = array.pop(1)
+		4.根据值删除元素
+			array.remove('two')
+
+	3.3 组织列表
+		3.3.1 使用方法sort()对列表进行永久性排序
+			sort() 升序
+			sort(reverse = True) 降序
+		3.3.2 使用函数sorted()对列表进行临时排序
+		3.3.3 倒着打印列表
+			array.reverse()
+			print(array)
+			方法reverse()永久性的修改列表元素的排列顺序，但是可随时恢复到原来的配列顺序，只需要再次对列表调用reserse()
+		3.3.4 确定列表的长度
+			len(array)
+	3.4 使用列表时避免错误
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

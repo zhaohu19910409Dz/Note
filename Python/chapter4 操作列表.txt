@@ -1,0 +1,63 @@
+chapter4 操作列表
+4.1 遍历整个列表
+	magicians=['alice','david','carolina']
+	for magician in magicians:
+		print(magician)
+	4.1.1 深入地研究循环
+	4.1.2 在for循环中执行更多的操作
+	4.1.3 在for循环结束后执行一些操作
+4.2 避免缩进错误
+4.3 创建数值列表
+	4.3.1 使用函数range()
+		Python函数rang()让你能够轻松地生成一系列的数字。
+		for value in range(1,5):
+			print(value)
+	4.3.2 使用range()创建数字列表
+		numbers = list(range(1,6))
+		print(numbers)
+		
+		使用函数range()时，还可以指定步长。例如，下面的代码打印1~10内的偶数：
+			event_numbers = list(range(2,11,2))
+			print(event_number);
+		squares = []
+		for value in range(1,11)
+			squares.append(value**2)
+	4.3.3 对数字列表执行简单的统计计算
+		digits = [1,2,3,4,5,6,7,8,9,0]
+		min(digits)
+		max(digits)
+		sum(digits)
+	4.3.4 列表解析
+		squares = [value**2 for value in range(1,11)]
+		print(squares)
+4.4 使用列表的一部分
+	处理列表的部分元素-Python称之为切片
+	4.4.1 切片
+		要创建切片，可指定要使用的第一元素和最后一个元素的索引。
+		players = ['once','tow','treee']
+		print(players[0:2])//从索引0开始，到索引2单不包括2
+		输出：['one','tow']
+
+		如果你没有指定第一个索引，Python将自动从列表头开始：
+		print（players[:3]	//从头到索引3单不包括3
+		player[2:]//从2到结尾包括2
+
+		无论列表多长，这种语法都能够让你输出从特定位置到列表末尾IDE所有元素。负数索引返回离列表末尾相应距离的元素。
+		eg:获取输出名单的最后三个队员：players[-3:]
+	4.4.2 遍历切片
+	4.4.3 复制列表
+		my_foods = ['pizza','falafel','carrot cake']
+		friend_foods = my_foods[:]
+4.5 元组
+	列表时可以修改的，不可变的列表被称为元组。
+	4.5.1定义元组
+		dimensions = (200,50)
+		print(dimensions[0])
+	4.5.2 遍历元组中的所有值
+		for dimension in dimensions:
+			print(demension)
+	4.5.3 修改元组变量
+		dimensions = (200,50)
+		dimensions = (200,220)
+4.6 设置代码格式
+	
