@@ -8,7 +8,7 @@ chapter3套接字编程简介
 		IPv4套接字地址结构通常也称为"网际套接字地址结构"，它以sockaddr_in命令,定义在<netinet/in.h>头文件中
 		struct in_addr
 		{
-			in_addr_t s_addr;
+			in_adadr_t s_addr;
 		};
 
 		struct sockaddr_in

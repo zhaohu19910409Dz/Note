@@ -1,0 +1,76 @@
+chapter5 if语句
+	5.1 一个简单示例
+		cars = ['audio','bmw','subaru','toyota']
+
+		for car in cars:
+			if car == 'bmw':
+				print(car.upper())
+			else:
+				print(car.title())
+	5.2 条件测试
+		5.2.1 检查是否相等
+		5.2.1 检查是否相等时不考虑大小写
+			car = 'Audio'
+			car.lower() == 'audio'
+		5.2.3 检查是否不相等
+		5.2.4 比较数字
+		5.2.5 检查多个条件
+			1.使用and检查多个条件
+				（age_0 >= 21) and (age_1 >= 21)
+			2.使用or检查多个条件
+				（age_0 >= 21) or (age_1 >= 21)
+		5.2.6 检查特定值是否包含在列表
+			'audio' in cars
+		5.2.7 检查特定值不包含在列表中
+			not in
+		5.2.8 布尔表达式
+	5.3 if语句
+		5.3.1 简单的if语句
+			if conditional_test:
+				do something
+		5.3.2 if-else 语句
+			age = 17
+			if age >= 18:
+				//...
+			else:
+				//...
+		5.3.3 if-elif-else
+			age = 12
+			if age < 4:
+				//...
+			elif age < 18:
+				//...
+			else
+				//...
+		5.3.4 使用多个elif代码块
+		5.3.5 省略else代码块
+		5.3.6 测试多个条件
+	5.4 使用if语句处理列表
+		5.4.1 检查特殊元素
+		5.4.2 确定列表不是空的
+			cars = []
+			if car:
+				//...
+			else:
+				//...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
